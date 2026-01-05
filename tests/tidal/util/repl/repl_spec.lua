@@ -2,8 +2,33 @@
 --- @diagnostic disable: duplicate-set-field
 --- @diagnostic disable: inject-field
 ---
+---
+
 local mock = require("luassert.mock")
 local stub = require("luassert.stub")
+
+-- Save original functions
+local orig_get_buf = vim.api.nvim_get_current_buf
+local orig_get_lines = vim.api.nvim_buf_get_lines
+local orig_set_lines = vim.api.nvim_buf_set_lines
+local orig_cmd = vim.cmd
+
+vim.api.nvim_get_current_buf = function()
+  return 1 -- always return a valid buffer number
+end
+
+vim.api.nvim_buf_get_lines = function()
+  return { "mocked line 1", "mocked line 2" } -- must be a table
+end
+
+vim.api.nvim_buf_set_lines = function(_, _, _, _, lines)
+  return lines -- return a table (or true)
+end
+
+vim.cmd = function(cmd)
+  -- optionally just log or do nothing
+  print("Mocked vim.cmd:", cmd)
+end
 
 describe("Repl", function()
   local Repl
@@ -15,36 +40,6 @@ describe("Repl", function()
   local fake_pipe
 
   before_each(function()
-    --------------------------------------------------------------------------
-    -- Reset global vim -------------------------------------------------------
-    --------------------------------------------------------------------------
-    -- _G.vim = {
-    --   loop = {},
-    --   api = {},
-    --   fn = {},
-    --   notify = function() end,
-    --   schedule = function(cb)
-    --     cb()
-    --   end,
-    --   log = { levels = { INFO = 1, WARN = 2, ERROR = 3 } },
-    --   tbl_deep_extend = function(_, ...)
-    --     local result = {}
-    --     for _, t in ipairs({ ... }) do
-    --       for k, v in pairs(t) do
-    --         result[k] = v
-    --       end
-    --     end
-    --     return result
-    --   end,
-    --   split = function(str, sep)
-    --     local t = {}
-    --     for s in string.gmatch(str, "([^" .. sep .. "]+)") do
-    --       table.insert(t, s)
-    --     end
-    --     return t
-    --   end,
-    -- }
-
     --------------------------------------------------------------------------
     -- Mock libuv -------------------------------------------------------------
     --------------------------------------------------------------------------
@@ -73,7 +68,7 @@ describe("Repl", function()
       return vim.deepcopy(fake_pipe)
     end
 
-    vim.loop.spawn = function(cmd, opts, on_exit)
+    vim.loop.spawn = function(cmd, opts)
       spawn_called = true
       spawned_opts = { cmd = cmd, opts = opts }
       return fake_proc
@@ -125,6 +120,14 @@ describe("Repl", function()
     --------------------------------------------------------------------------
     package.loaded["tidal.util.repl.repl"] = nil
     Repl = require("tidal.util.repl.repl")
+  end)
+
+  -- Restore the original vim after tests
+  after_each(function()
+    vim.api.nvim_get_current_buf = orig_get_buf
+    vim.api.nvim_buf_get_lines = orig_get_lines
+    vim.api.nvim_buf_set_lines = orig_set_lines
+    vim.cmd = orig_cmd
   end)
 
   describe("new", function()
