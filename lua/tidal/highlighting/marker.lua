@@ -30,7 +30,7 @@ Marker.ns = vim.api.nvim_create_namespace("tidalEventHighlighting")
 ---Create all properties and metadata for ext marks
 ---@param ranges table<TidalWordRanges>
 ---@param lineNumber integer
----@param eventId string
+---@param eventId integer
 function Marker.createMarkers(ranges, lineNumber, eventId)
   local curr_buf = vim.api.nvim_get_current_buf()
   for _, value in ipairs(ranges) do

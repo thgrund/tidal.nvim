@@ -42,7 +42,7 @@ describe("Marker", function()
         },
       }
 
-      Marker.createMarkers(ranges, 1, "event-1")
+      Marker.createMarkers(ranges, 1, 1)
 
       -- internal count
       eq(2, Marker.count())
@@ -51,7 +51,7 @@ describe("Marker", function()
       eq(2, Marker.countNsExtmarks())
 
       -- verify stored metadata
-      local markers = Marker.extMarks["event-1"]
+      local markers = Marker.extMarks[1]
       eq("bd", markers[9].originalText)
       eq("sn", markers[12].originalText)
 
@@ -76,11 +76,11 @@ describe("Marker", function()
         },
       }
 
-      Marker.createMarkers(ranges, 1, "event-1")
+      Marker.createMarkers(ranges, 1, 1)
 
       eq(1, Marker.count())
 
-      local markers = Marker.extMarks["event-1"]
+      local markers = Marker.extMarks[1]
       eq('bd"', markers[9].originalText:sub(1, 3))
     end)
   end)
@@ -99,11 +99,11 @@ describe("Marker", function()
 
       Marker.createMarkers({
         { range_start = 9, range_end = 10, function_name = "d1", quote_index = 1 },
-      }, 1, "event-1")
+      }, 1, 1)
 
       Marker.createMarkers({
         { range_start = 9, range_end = 10, function_name = "d2", quote_index = 1 },
-      }, 2, "event-2")
+      }, 2, 2)
 
       eq(2, Marker.count())
       eq(2, Marker.countNsExtmarks())
@@ -119,7 +119,7 @@ describe("Marker", function()
       Marker.createMarkers({
         { range_start = 9, range_end = 10, function_name = "d1", quote_index = 1 },
         { range_start = 12, range_end = 13, function_name = "d1", quote_index = 1 },
-      }, 1, "event-1")
+      }, 1, 1)
 
       eq(2, Marker.count())
 
@@ -139,9 +139,9 @@ describe("Marker", function()
         'd3 $ s "cp"',
       })
 
-      Marker.createMarkers({ { range_start = 9, range_end = 10, function_name = "s", quote_index = 1 } }, 1, "event-1")
-      Marker.createMarkers({ { range_start = 9, range_end = 10, function_name = "s", quote_index = 1 } }, 2, "event-2")
-      Marker.createMarkers({ { range_start = 9, range_end = 10, function_name = "s", quote_index = 1 } }, 3, "event-3")
+      Marker.createMarkers({ { range_start = 9, range_end = 10, function_name = "s", quote_index = 1 } }, 1, 1)
+      Marker.createMarkers({ { range_start = 9, range_end = 10, function_name = "s", quote_index = 1 } }, 2, 2)
+      Marker.createMarkers({ { range_start = 9, range_end = 10, function_name = "s", quote_index = 1 } }, 3, 3)
 
       eq(3, Marker.count())
 
