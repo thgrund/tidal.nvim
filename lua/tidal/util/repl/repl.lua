@@ -4,6 +4,8 @@ local Buffer = require("tidal.util.buffer")
 ---@field buf Buffer
 ---@field proc? integer
 ---@field opts ReplOpts
+---@field onDataProcessed? fun(self, table<string>)
+---@field playstate table<string>
 local Repl = {}
 Repl.__index = Repl
 
@@ -27,6 +29,7 @@ function Repl:new(opts)
   obj.stderr = {}
   obj.stdin = {}
   obj.proc = nil
+  obj.playstate = {}
 
   return obj
 end
@@ -36,8 +39,10 @@ local uv, api, _ = vim.loop, vim.api, vim.fn
 local marker = require("tidal.highlighting.marker")
 local tokenizer = require("tidal.highlighting.tokenizer")
 
-local function attach(pipe, label, buf)
+function Repl:attach(pipe, label)
   local buf_acc = ""
+  local isLocked = false
+
   pipe:read_start(function(err, data)
     if err then
       vim.schedule(function()
@@ -65,7 +70,27 @@ local function attach(pipe, label, buf)
       end
 
       for _, line in ipairs(complete) do
-        buf:append(line .. "\n")
+        if line == "LOCK_REPL_START" then
+          isLocked = true
+        end
+      end
+
+      if isLocked then
+        for _, line in ipairs(complete) do
+          table.insert(self.playstate, line)
+
+          if line == "LOCK_REPL_END" then
+            self:onDataProcessed(self.playstate)
+            self.playstate = {}
+            isLocked = false
+          end
+        end
+      else
+        if self.buf then
+          for _, line in ipairs(complete) do
+            self.buf:append(line .. "\n")
+          end
+        end
       end
     end)
   end)
@@ -111,6 +136,9 @@ function Repl:start(opts)
   api.nvim_buf_set_name(buf, "tidal-fast://" .. self.opts.cmd)
   vim.notify("[tidal] " .. self.opts.cmd .. " started (pipe mode)", vim.log.levels.INFO)
 
+  self:attach(self.stdout, "stdout")
+  self:attach(self.stderr, "stderr")
+
   return self
 end
 
@@ -126,15 +154,14 @@ function Repl:showNotificationBuffer(filetype)
   self.buf:show(self.opts or {})
 
   self.buf:set_option("filetype", filetype)
-
-  attach(self.stdout, "stdout", self.buf)
-  attach(self.stderr, "stderr", self.buf)
 end
 
 --- Send text to REPL
 --- @generic T
 --- @return T for method chaining
-function Repl:send(text, start)
+function Repl:send(text, start, isLocked)
+  isLocked = isLocked or false
+
   if start then
     local enrichedText = {}
     local rowIndex = 0
@@ -157,7 +184,13 @@ function Repl:send(text, start)
 
   -- vim.notify("[tidal-fast] Repl send received", vim.log.levels.INFO)
   if self.stdin and not self.stdin:is_closing() then
-    self.stdin:write(text)
+    if isLocked then
+      self.stdin:write('\n:{\nputStrLn "LOCK_REPL_START"\n:}\n')
+      self.stdin:write(text)
+      self.stdin:write('\n:{\nputStrLn "LOCK_REPL_END"\n:}\n')
+    else
+      self.stdin:write(text)
+    end
   end
 
   if self.proc == nil then

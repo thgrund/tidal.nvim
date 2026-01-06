@@ -234,6 +234,33 @@ describe("Repl", function()
       assert.equals(0, tokenizer.lastEventId)
       assert.stub(autocmd_stub).was_called()
     end)
+
+    it("writes locked text with proper markers", function()
+      local written
+      fake_pipe.write = function(_, txt)
+        written = written or ""
+        written = written .. txt
+      end
+
+      local r = Repl:new({ cmd = "ghci" })
+      r.stdin = vim.loop.new_pipe()
+      r.proc = fake_proc
+
+      r:send("locked text", nil, true)
+
+      assert.matches(
+        [[
+:{
+putStrLn "LOCK_REPL_START"
+:}
+locked text
+:{
+putStrLn "LOCK_REPL_END"
+:}
+]],
+        written
+      )
+    end)
   end)
 
   describe("send helpers", function()
@@ -283,6 +310,66 @@ describe("Repl", function()
       assert.stub(jobstop_stub).was_called_with(123)
 
       jobstop_stub:revert()
+    end)
+  end)
+
+  describe("attach", function()
+    it("captures playstate between LOCK_REPL_START and LOCK_REPL_END", function()
+      local r = Repl:new({ cmd = "ghci" })
+      r.stdin = vim.loop.new_pipe()
+      r.proc = fake_proc
+
+      -- Mock the attach function to simulate receiving playstate data
+      local onDataProcessed_called = false
+      r.onDataProcessed = function(_, playstate)
+        onDataProcessed_called = true
+        assert.is_table(playstate)
+        assert.equals("LOCK_REPL_START", playstate[1])
+        assert.equals("playstate line 1", playstate[2])
+        assert.equals("playstate line 2", playstate[3])
+        assert.equals("LOCK_REPL_END", playstate[4])
+      end
+
+      -- Simulate receiving playstate data
+      local fake_pipe = {
+        read_start = function(_, callback)
+          callback(nil, "LOCK_REPL_START\nplaystate line 1\nplaystate line 2\nLOCK_REPL_END\n")
+        end,
+      }
+
+      r:attach(fake_pipe, "stdout")
+
+      vim.wait(100, function()
+        return onDataProcessed_called
+      end)
+
+      assert.is_true(onDataProcessed_called)
+    end)
+    it("should not trigger onDataProcessed callback when there are no LOCK_REPL_START and LOCK_REPL_END", function()
+      local r = Repl:new({ cmd = "ghci" })
+      r.stdin = vim.loop.new_pipe()
+      r.proc = fake_proc
+
+      -- Mock the attach function to simulate receiving playstate data
+      local onDataProcessed_called = false
+      r.onDataProcessed = function(_, _)
+        onDataProcessed_called = true
+      end
+
+      -- Simulate receiving playstate data
+      local fake_pipe = {
+        read_start = function(_, callback)
+          callback(nil, "playstate line 1\nplaystate line 2\n")
+        end,
+      }
+
+      r:attach(fake_pipe, "stdout")
+
+      vim.wait(100, function()
+        return onDataProcessed_called
+      end)
+
+      assert.is_false(onDataProcessed_called)
     end)
   end)
 end)

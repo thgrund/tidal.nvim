@@ -5,6 +5,13 @@ local marker = require("tidal.highlighting.marker")
 local Ghci = Repl:new()
 Ghci.__index = Ghci
 
+Ghci.onDataProcessed = function(_, playstate)
+  print("Ghci processed data")
+  for _, value in ipairs(playstate) do
+    print(value)
+  end
+end
+
 --- Send multi-line text to GHCi
 ---@param lines string[]
 function Ghci:send_multiline(lines, start)
