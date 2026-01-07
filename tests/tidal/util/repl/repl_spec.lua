@@ -331,7 +331,7 @@ putStrLn "LOCK_REPL_END"
       end
 
       -- Simulate receiving playstate data
-      local fake_pipe = {
+      fake_pipe = {
         read_start = function(_, callback)
           callback(nil, "LOCK_REPL_START\nplaystate line 1\nplaystate line 2\nLOCK_REPL_END\n")
         end,
