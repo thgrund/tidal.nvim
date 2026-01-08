@@ -1,3 +1,5 @@
+local Events = require("tidal.highlighting.events")
+
 local eq = assert.are.same
 
 local orig_schedule
@@ -12,7 +14,7 @@ local function sortEvents(list)
 end
 
 describe("OSC", function()
-  local OSC
+  local osc
   local marker
   local highlight
   local losc_instances = {}
@@ -66,9 +68,9 @@ describe("OSC", function()
       end,
     }
 
-    OSC = require("tidal.highlighting.osc")
-    OSC.messageBuffer = {}
-    OSC.activeMessages = {}
+    osc = require("tidal.highlighting.osc")
+    osc.messageBuffer = {}
+    osc.activeMessages = {}
 
     orig_schedule = vim.schedule
     vim.schedule = function(fn)
@@ -88,7 +90,7 @@ describe("OSC", function()
         { buf = 1, markerId = 11 },
       }
 
-      local diff = OSC.diffEventLists({}, curr)
+      local diff = Events.diffEventLists({}, curr)
 
       sortEvents(diff.added)
       sortEvents(curr)
@@ -103,7 +105,7 @@ describe("OSC", function()
         { buf = 1, markerId = 10 },
       }
 
-      local diff = OSC.diffEventLists(prev, {})
+      local diff = Events.diffEventLists(prev, {})
 
       eq(prev, diff.removed)
       eq({}, diff.added)
@@ -121,7 +123,7 @@ describe("OSC", function()
         { buf = 2, markerId = 99 },
       }
 
-      local diff = OSC.diffEventLists(prev, curr)
+      local diff = Events.diffEventLists(prev, curr)
 
       eq({ { buf = 1, markerId = 10 } }, diff.removed)
       eq({ { buf = 2, markerId = 99 } }, diff.added)
@@ -140,7 +142,7 @@ describe("OSC", function()
       }
 
       -- Launch OSC (registers handlers)
-      OSC.launch({
+      osc.launch({
         events = { osc = { ip = "127.0.0.1", port = 9000 } },
         styles = { osc = { ip = "127.0.0.1", port = 9001 } },
       })
@@ -160,16 +162,16 @@ describe("OSC", function()
       })
 
       vim.wait(10, function()
-        return #OSC.messageBuffer == 1
+        return #osc.messageBuffer == 1
       end)
 
-      eq(1, #OSC.messageBuffer)
-      eq(99, OSC.messageBuffer[1].id)
-      eq(42, OSC.messageBuffer[1].markerId)
+      eq(1, #osc.messageBuffer)
+      eq(99, osc.messageBuffer[1].id)
+      eq(42, osc.messageBuffer[1].markerId)
     end)
 
     it("ignores messages without matching extmarks", function()
-      OSC.launch({
+      osc.launch({
         events = { osc = { ip = "127.0.0.1", port = 9000 } },
         styles = { osc = { ip = "127.0.0.1", port = 9001 } },
       })
@@ -182,13 +184,13 @@ describe("OSC", function()
 
       vim.wait(10)
 
-      eq({}, OSC.messageBuffer)
+      eq({}, osc.messageBuffer)
     end)
   end)
 
   describe("OSC style handler (/neovim/eventhighlighting/addstyle)", function()
     it("forwards style messages to highlight.addHl", function()
-      OSC.launch({
+      osc.launch({
         events = { osc = { ip = "127.0.0.1", port = 9000 } },
         styles = { osc = { ip = "127.0.0.1", port = 9001 } },
       })
