@@ -48,6 +48,7 @@ local function startStyleServer(host, port)
     vim.schedule(function()
       local msg = data.message
       local id = msg[1]
+      local color = msg[2]
       highlight.addHl(id, color)
     end)
   end)
@@ -98,5 +99,7 @@ function OSC.clearInterval()
   end
   messageBuffer = {}
 end
+
+OSC._messageBuffer = messageBuffer
 
 return OSC

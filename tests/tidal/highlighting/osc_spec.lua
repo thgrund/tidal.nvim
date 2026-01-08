@@ -162,12 +162,12 @@ describe("OSC", function()
       })
 
       vim.wait(10, function()
-        return #osc.messageBuffer == 1
+        return #osc._messageBuffer == 1
       end)
 
-      eq(1, #osc.messageBuffer)
-      eq(99, osc.messageBuffer[1].id)
-      eq(42, osc.messageBuffer[1].markerId)
+      eq(1, #osc._messageBuffer)
+      eq(99, osc._messageBuffer[1].id)
+      eq(42, osc._messageBuffer[1].markerId)
     end)
 
     it("ignores messages without matching extmarks", function()
