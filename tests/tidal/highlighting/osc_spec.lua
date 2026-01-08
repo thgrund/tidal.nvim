@@ -46,12 +46,46 @@ describe("OSC", function()
     }
     package.loaded["tidal.highlighting.marker"] = marker
 
-    -- Stub libuv transport
-    package.loaded["losc.src.losc.plugins.udp-libuv"] = {
-      new = function()
-        return {}
+    -- Stub vim.uv for timer testing (must be set up before any modules are loaded)
+    package.loaded["vim.uv"] = {
+      new_timer = function()
+        return {
+          started = false,
+          closed = false,
+          start = function(self, initial, repeat_interval, callback)
+            self.started = true
+            self.initial = initial
+            self.repeat_interval = repeat_interval
+            self.callback = callback
+          end,
+          stop = function(self)
+            self.started = false
+          end,
+          close = function(self)
+            self.closed = true
+          end,
+        }
+      end,
+      new_udp = function()
+        return {
+          bind = function()
+            return true
+          end,
+          recv_start = function()
+            return true
+          end,
+          recv_stop = function()
+            return true
+          end,
+          close = function()
+            return true
+          end,
+        }
       end,
     }
+
+    -- Also stub vim.uv directly to ensure it's used by modules that cache it
+    vim.uv = package.loaded["vim.uv"]
 
     -- Stub losc and capture handlers
     package.loaded["losc.src.losc"] = {
@@ -131,7 +165,7 @@ describe("OSC", function()
     end)
   end)
 
-  describe("OSC event handler (/editor/highlights)", function()
+  describe("event handler (/editor/highlights)", function()
     it("adds matching extmarks to messageBuffer", function()
       -- Arrange marker
       marker.extMarks[0] = {
@@ -188,7 +222,7 @@ describe("OSC", function()
     end)
   end)
 
-  describe("OSC style handler (/neovim/eventhighlighting/addstyle)", function()
+  describe("style handler (/neovim/eventhighlighting/addstyle)", function()
     it("forwards style messages to highlight.addHl", function()
       osc.launch({
         events = { osc = { ip = "127.0.0.1", port = 9000 } },
@@ -210,6 +244,38 @@ describe("OSC", function()
 
       eq(1, #highlight._calls)
       eq({ id = 123, color = "#ff0000" }, highlight._calls[1])
+    end)
+  end)
+
+  describe("timer functions", function()
+    it("setInterval creates and starts a timer", function()
+      osc.setInterval(100)
+
+      local timer = osc.timer
+      assert(timer ~= nil, "Timer should be created")
+      assert(timer.started, "Timer should be started")
+      assert(timer.initial == 100, "Timer should have correct initial interval")
+      assert(timer.repeat_interval == 100, "Timer should have correct repeat interval")
+    end)
+
+    it("clearInterval stops and closes the timer", function()
+      osc.setInterval(100)
+      local timer = osc.timer
+
+      osc.clearInterval()
+
+      assert(not timer.started, "Timer should be stopped")
+      assert(timer.closed, "Timer should be closed")
+      assert(osc.timer == nil, "Timer reference should be cleared")
+      assert(#osc.messageBuffer == 0, "Message buffer should be cleared")
+    end)
+
+    it("clearInterval handles case when timer is nil", function()
+      osc.timer = nil
+
+      assert.has_no.errors(function()
+        osc.clearInterval()
+      end)
     end)
   end)
 end)
