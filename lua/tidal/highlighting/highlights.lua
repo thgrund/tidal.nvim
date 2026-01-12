@@ -88,4 +88,7 @@ function Highlights.removeAllHighlights()
   end
 end
 
+-- For testing
+Highlights._selectHlGroup = selectHlGroup
+
 return Highlights

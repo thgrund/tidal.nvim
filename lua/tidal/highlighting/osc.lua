@@ -67,7 +67,7 @@ local function handleMessages()
     highlight.removeHighlight(evt.buf, evt.markerId)
   end
 
-  activeMessages = events.merge_arrays_of_tables(diff.active, diff.added)
+  activeMessages = events.merge(diff.active, diff.added)
 
   if handleMessageCallback then
     handleMessageCallback(activeMessages)

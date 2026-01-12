@@ -39,6 +39,9 @@ local uv, api, _ = vim.loop, vim.api, vim.fn
 local marker = require("tidal.highlighting.marker")
 local tokenizer = require("tidal.highlighting.tokenizer")
 
+local LOCK_START = "LOCK_REPL_START"
+local LOCK_END = "LOCK_REPL_END"
+
 function Repl:attach(pipe, label)
   local buf_acc = ""
   local isLocked = false
@@ -70,7 +73,7 @@ function Repl:attach(pipe, label)
       end
 
       for _, line in ipairs(complete) do
-        if line == "LOCK_REPL_START" then
+        if line == LOCK_START then
           isLocked = true
         end
       end
@@ -79,7 +82,7 @@ function Repl:attach(pipe, label)
         for _, line in ipairs(complete) do
           table.insert(self.playstate, line)
 
-          if line == "LOCK_REPL_END" then
+          if line == LOCK_END then
             self:onDataProcessed(self.playstate)
             self.playstate = {}
             isLocked = false
