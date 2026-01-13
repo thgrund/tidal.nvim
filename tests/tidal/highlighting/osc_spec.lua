@@ -1,3 +1,6 @@
+--- @diagnostic disable: undefined-field
+--- @diagnostic disable: duplicate-set-field
+
 local Events = require("tidal.highlighting.events")
 
 local eq = assert.are.same
