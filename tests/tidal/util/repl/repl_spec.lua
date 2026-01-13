@@ -246,16 +246,16 @@ describe("Repl", function()
       r.stdin = vim.loop.new_pipe()
       r.proc = fake_proc
 
-      r:send("locked text", nil, true)
+      r:send("locked text", nil, "SAM")
 
       assert.matches(
         [[
 :{
-putStrLn "LOCK_REPL_START"
+putStrLn "SAM_START"
 :}
 locked text
 :{
-putStrLn "LOCK_REPL_END"
+putStrLn "SAM_END"
 :}
 ]],
         written
@@ -318,10 +318,12 @@ putStrLn "LOCK_REPL_END"
       local r = Repl:new({ cmd = "ghci" })
       r.stdin = vim.loop.new_pipe()
       r.proc = fake_proc
+      r.lockStart = "LOCK_REPL_START"
+      r.lockEnd = "LOCK_REPL_END"
 
       -- Mock the attach function to simulate receiving playstate data
       local onDataProcessed_called = false
-      r.onDataProcessed = function(_, playstate)
+      r.onDataProcessed = function(playstate)
         onDataProcessed_called = true
         assert.is_table(playstate)
         assert.equals("LOCK_REPL_START", playstate[1])
@@ -352,12 +354,12 @@ putStrLn "LOCK_REPL_END"
 
       -- Mock the attach function to simulate receiving playstate data
       local onDataProcessed_called = false
-      r.onDataProcessed = function(_, _)
+      r.onDataProcessed = function(_)
         onDataProcessed_called = true
       end
 
       -- Simulate receiving playstate data
-      local fake_pipe = {
+      fake_pipe = {
         read_start = function(_, callback)
           callback(nil, "playstate line 1\nplaystate line 2\n")
         end,

@@ -4,8 +4,8 @@ local Buffer = require("tidal.util.buffer")
 ---@field buf Buffer
 ---@field proc? integer
 ---@field opts ReplOpts
----@field onDataProcessed? fun(self, table<string>)
----@field playstate table<string>
+---@field onDataProcessed? fun(table<string>)
+---@field lockedStdOut table<string>
 local Repl = {}
 Repl.__index = Repl
 
@@ -29,7 +29,7 @@ function Repl:new(opts)
   obj.stderr = {}
   obj.stdin = {}
   obj.proc = nil
-  obj.playstate = {}
+  obj.lockedStdOut = {}
 
   return obj
 end
@@ -38,9 +38,6 @@ local uv, api, _ = vim.loop, vim.api, vim.fn
 
 local marker = require("tidal.highlighting.marker")
 local tokenizer = require("tidal.highlighting.tokenizer")
-
-local LOCK_START = "LOCK_REPL_START"
-local LOCK_END = "LOCK_REPL_END"
 
 function Repl:attach(pipe, label)
   local buf_acc = ""
@@ -73,18 +70,18 @@ function Repl:attach(pipe, label)
       end
 
       for _, line in ipairs(complete) do
-        if line == LOCK_START then
+        if line == self.lockStart then
           isLocked = true
         end
       end
 
       if isLocked then
         for _, line in ipairs(complete) do
-          table.insert(self.playstate, line)
+          table.insert(self.lockedStdOut, line)
 
-          if line == LOCK_END then
-            self:onDataProcessed(self.playstate)
-            self.playstate = {}
+          if line == self.lockEnd then
+            self.onDataProcessed(self.lockedStdOut)
+            self.lockedStdOut = {}
             isLocked = false
           end
         end
@@ -111,6 +108,9 @@ function Repl:start(opts)
   end
 
   self.opts = vim.tbl_deep_extend("force", {}, self.opts, opts or {})
+
+  self.lockStart = nil
+  self.lockEnd = nil
 
   self.stdin = uv.new_pipe(false)
   self.stdout, self.stderr = uv.new_pipe(false), uv.new_pipe(false)
@@ -162,8 +162,14 @@ end
 --- Send text to REPL
 --- @generic T
 --- @return T for method chaining
-function Repl:send(text, start, isLocked)
-  isLocked = isLocked or false
+function Repl:send(text, start, lockName)
+  local isLocked = false
+  if lockName ~= 0 and lockName ~= nil then
+    isLocked = true
+
+    self.lockStart = lockName .. "_START"
+    self.lockEnd = lockName .. "_END"
+  end
 
   if start then
     local enrichedText = {}
@@ -188,9 +194,9 @@ function Repl:send(text, start, isLocked)
   -- vim.notify("[tidal-fast] Repl send received", vim.log.levels.INFO)
   if self.stdin and not self.stdin:is_closing() then
     if isLocked then
-      self.stdin:write('\n:{\nputStrLn "LOCK_REPL_START"\n:}\n')
+      self.stdin:write('\n:{\nputStrLn "' .. lockName .. '_START"\n:}\n')
       self.stdin:write(text)
-      self.stdin:write('\n:{\nputStrLn "LOCK_REPL_END"\n:}\n')
+      self.stdin:write('\n:{\nputStrLn "' .. lockName .. '_END"\n:}\n')
     else
       self.stdin:write(text)
     end

@@ -2,10 +2,11 @@ local orig_schedule
 
 describe("PlayState", function()
   local playstate
-  before_each(function()
-    -- Reset modules
-    package.loaded["tidal.highlighting.osc"] = nil
 
+  local eq = assert.are.same
+  local ghciSend_called = false
+
+  before_each(function()
     -- Stub vim.uv for timer testing (must be set up before any modules are loaded)
     package.loaded["vim.uv"] = {
       new_timer = function()
@@ -44,10 +45,16 @@ describe("PlayState", function()
       end,
     }
 
+    package.loaded["tidal.core.state"] = {
+      ghci = {
+        send = function() end,
+      },
+    }
+
     -- Also stub vim.uv directly to ensure it's used by modules that cache it
     vim.uv = package.loaded["vim.uv"]
 
-    playstate = require("tidal.highlighting.playstate")
+    playstate = require("tidal.highlighting.playstate.process")
 
     orig_schedule = vim.schedule
     vim.schedule = function(fn)
@@ -58,6 +65,7 @@ describe("PlayState", function()
   after_each(function()
     -- Restore vim.schedule
     vim.schedule = orig_schedule
+    ghciSend_called = false
   end)
 
   describe("timer functions", function()
@@ -88,6 +96,45 @@ describe("PlayState", function()
       assert.has_no.errors(function()
         playstate.clearInterval()
       end)
+    end)
+  end)
+
+  describe("onDataProcessed", function()
+    it("extract SAM correctly", function()
+      local sam = { "SAM_START", "100 % 1", "SAM_END" }
+
+      playstate._onDataProcessed(sam)
+
+      eq(playstate.sam, 100)
+    end)
+    it("triggers getCurrent when SAM was received", function()
+      local getCurrent_called = false
+      local sam = { "SAM_START", "100 % 1", "SAM_END" }
+      playstate.getCurrent = function()
+        getCurrent_called = true
+      end
+
+      playstate._onDataProcessed(sam)
+      assert.truthy(getCurrent_called)
+    end)
+    it("extract PLAYSTATE correctly", function()
+      local state = {
+        "PLAYSTATE_START",
+        '[((8,2),(18,2)),((30,2),(31,2))](0>1)|_id_: "1", note: 0.0n (c5), orbit: 0, s: "superpiano"',
+        '[((17,2),(27,2)),((38,2),(39,2))]0-(1>2)-3|_id_: "1", note: 9.0n (a5), orbit: 0, s: "superpiano"',
+        '[((19,2),(29,2)),((40,2),(41,2))]0-(2>2½)|_id_: "1", note: 9.0n (a5), orbit: 0, s: "superpiano"',
+        '[((19,2),(29,2)),((40,2),(41,2))](2½>3)-5|_id_: "1", note: 9.0n (a5), orbit: 0, s: "superpiano"',
+        "PLAYSTATE_END",
+      }
+
+      playstate._onDataProcessed(state)
+
+      eq(playstate._lastReceivedPlayState, {
+        '[((8,2),(18,2)),((30,2),(31,2))](0>1)|_id_: "1", note: 0.0n (c5), orbit: 0, s: "superpiano"',
+        '[((17,2),(27,2)),((38,2),(39,2))]0-(1>2)-3|_id_: "1", note: 9.0n (a5), orbit: 0, s: "superpiano"',
+        '[((19,2),(29,2)),((40,2),(41,2))]0-(2>2½)|_id_: "1", note: 9.0n (a5), orbit: 0, s: "superpiano"',
+        '[((19,2),(29,2)),((40,2),(41,2))](2½>3)-5|_id_: "1", note: 9.0n (a5), orbit: 0, s: "superpiano"',
+      })
     end)
   end)
 end)

@@ -66,3 +66,10 @@ marker.print()
 -- print(marker.count())
 --
 --
+--
+
+local a = nil
+
+if a then
+  print("Klappt")
+end

@@ -10,6 +10,7 @@ local Marker = {}
 ---
 
 ---@class TidalExtMark
+---@field id integer
 ---@field buf integer
 ---@field markerId integer
 ---@field colStart integer
