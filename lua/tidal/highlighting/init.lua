@@ -3,7 +3,7 @@ local EventHighlights = {}
 local config = require("tidal.config")
 local highlights = require("tidal.highlighting.highlights")
 local osc = require("tidal.highlighting.osc")
-local playstate = require("tidal.highlighting.playstate.process")
+local playstate = require("tidal.highlighting.playstate")
 
 function EventHighlights.start(highlight)
   local fpsToMs = 1000 / highlight.fps

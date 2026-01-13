@@ -1,11 +1,15 @@
 local PlayState = {}
 
+local playStateParser = require("tidal.highlighting.playstate.parser")
 local state = require("tidal.core.state")
 
 local uv = vim.uv
 
 local LOCK_SAM = "SAM"
-local LOCK_PLAYSTATE = "PLAYSTATE"
+local LOCK_INIT_PLAYSTATE = "INIT_PLAYSTATE"
+local LOCK_EXTEND_PLAYSTATE = "EXTEND_PLAYSTATE"
+
+local currentPlayState = {}
 
 PlayState.timer = nil
 PlayState.sam = nil
@@ -42,59 +46,63 @@ local function startsWith(str, start)
   return str:sub(1, #start) == start
 end
 
-local function handleSchedule()
+function PlayState.handleSchedule()
   state.ghci:send("getnow >>= print . sam", nil, LOCK_SAM)
 end
 
-local function onDataProcessed(output)
+function PlayState.parse(list)
+  local result = {}
+
+  for _, raw in ipairs(list) do
+    for _, parsed in ipairs(playStateParser.parse(raw)) do
+      table.insert(result, parsed)
+    end
+  end
+
+  return result
+end
+
+function PlayState.onDataProcessed(output)
   if #output > 2 then
     if startsWith(output[1], LOCK_SAM) then
       removeFirstAndLast(output)
       local sam = convertHaskelRatio(output[1])
 
-      PlayState.sam = sam
-
-      PlayState.getCurrent()
+      if PlayState.sam ~= sam then
+        PlayState.sam = sam
+        PlayState.getPlayState(sam + 3, sam + 4, LOCK_EXTEND_PLAYSTATE)
+      end
       return
     end
 
-    if startsWith(output[1], LOCK_PLAYSTATE) then
+    if startsWith(output[1], LOCK_EXTEND_PLAYSTATE) then
       removeFirstAndLast(output)
       PlayState._lastReceivedPlayState = output
+      local parsedOutput = PlayState.parse(output)
+
+      for _, parsed in ipairs(parsedOutput) do
+        table.insert(currentPlayState, parsed)
+      end
+      return
+    end
+
+    if startsWith(output[1], LOCK_INIT_PLAYSTATE) then
+      removeFirstAndLast(output)
+      PlayState._lastReceivedPlayState = output
+      local parsedOutput = PlayState.parse(output)
+      currentPlayState = parsedOutput
       return
     end
   end
 end
 
-function PlayState.getCurrent()
-  if PlayState.sam then
-    state.ghci:send(
-      "streamActivePt tidal (Arc " .. PlayState.sam .. " " .. (PlayState.sam + 1) .. ")",
-      nil,
-      LOCK_PLAYSTATE
-    )
+---Requests the playstate from TidalCycles
+---@param start integer
+---@param stop integer
+function PlayState.getPlayState(start, stop, lock)
+  if start and stop then
+    state.ghci:send("streamActivePt tidal (Arc " .. start .. " " .. stop .. ")", nil, lock)
   end
 end
-
-function PlayState.launch()
-  state.ghci.onDataProcessed = onDataProcessed
-end
-
-function PlayState.setInterval(interval)
-  PlayState.timer = uv.new_timer()
-  PlayState.timer:start(interval, interval, function()
-    vim.schedule(handleSchedule)
-  end)
-end
-
-function PlayState.clearInterval()
-  if PlayState.timer ~= nil then
-    PlayState.timer:stop()
-    PlayState.timer:close()
-    PlayState.timer = nil
-  end
-end
-
-PlayState._onDataProcessed = onDataProcessed
 
 return PlayState
