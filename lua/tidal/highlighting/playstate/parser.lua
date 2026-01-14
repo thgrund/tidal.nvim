@@ -143,12 +143,12 @@ function M.parse(line)
   local result = {}
 
   for i = 1, #pos, 2 do
-    table.insert(result, {
+    result[pos[i][2] .. "-" .. pos[i][1]] = {
       id = extracted[3],
       colStart = pos[i][1],
       eventId = pos[i][2],
       whole = M.mapWhole(extracted[2]),
-    })
+    }
   end
 
   return result

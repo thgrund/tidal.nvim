@@ -1,5 +1,7 @@
 local PlayState = {}
 
+local highlight = require("tidal.highlighting.highlights")
+local marker = require("tidal.highlighting.marker")
 local playStateParser = require("tidal.highlighting.playstate.parser")
 local state = require("tidal.core.state")
 
@@ -7,14 +9,18 @@ local LOCK_SAM = "SAM"
 local LOCK_INIT_PLAYSTATE = "INIT_PLAYSTATE"
 local LOCK_EXTEND_PLAYSTATE = "EXTEND_PLAYSTATE"
 
----@type TidalEvent[]
+---@type table<string, TidalEvent>
 local currentPlayState = {}
+
+--- @type table<string, TidalEvent>
 local activeEvents = {}
 
 PlayState.timer = nil
 PlayState.sam = nil
 PlayState._lastReceivedPlayState = nil
 PlayState._currentPlayState = {}
+
+local handleMessageCallback = nil
 
 local function removeFirstAndLast(t)
   if not t or type(t) ~= "table" or #t < 2 then
@@ -49,21 +55,93 @@ end
 
 ---
 --- @param sam number
---- @param activeEvents TidalEvent[]
---- @param currentEvents TidalEvent[]
-local function diff(sam, active, current)
-  local removed = {}
-  local added = {}
+--- @param prevActive table<string, TidalEvent>
+--- @param current table<string, TidalEvent>
+local function diff(sam, prevActive, current)
+  local remove = {}
+  local add = {}
   local active = {}
 
+  for key, tidalEvent in pairs(current) do
+    if tidalEvent.whole.stop < sam then
+      table.insert(remove, key)
+    end
+
+    if tidalEvent.whole.start <= sam and tidalEvent.whole.stop >= sam then
+      if prevActive[key] == nil then
+        table.insert(add, key)
+      end
+
+      if prevActive[key] ~= nil then
+        table.insert(active, key)
+      end
+    end
+  end
+
   return {
-    removed = removed,
-    added = added,
+    remove = remove,
+    add = add,
     active = active,
   }
 end
 
-local function handleEvents() end
+---@param id integer
+---@return TidalExtMark?
+local function getExtMark(id)
+  local extmark
+
+  local eventId = currentPlayState[id].eventId
+  local colStart = currentPlayState[id].colStart
+
+  if marker.extMarks[eventId] and marker.extMarks[eventId][colStart] then
+    extmark = marker.extMarks[eventId][colStart]
+    extmark.id = currentPlayState[id].id
+  end
+
+  return extmark
+end
+
+--- @param sam number
+--- @param prevActive table<string, TidalEvent>
+--- @param current table<string, TidalEvent>
+local function handleEvents(sam, prevActive, current)
+  local events = diff(sam, prevActive, current)
+  local activeMessages = {}
+
+  for _, id in ipairs(events.remove) do
+    local extmark = getExtMark(id)
+
+    table.remove(activeEvents, id)
+    table.remove(currentPlayState, id)
+
+    if extmark ~= nil then
+      highlight.removeHighlight(extmark.buf, extmark.markerId)
+    end
+  end
+
+  for _, id in ipairs(events.add) do
+    local extmark = getExtMark(id)
+
+    table.insert(activeEvents, currentPlayState[id])
+
+    if extmark ~= nil then
+      highlight.addHighlight(extmark.id, extmark.buf, extmark.markerId)
+      table.insert(activeMessages, extmark)
+    end
+  end
+
+  for _, id in ipairs(events.active) do
+    local extmark = getExtMark(id)
+
+    if extmark ~= nil then
+      table.insert(activeMessages, extmark)
+    end
+  end
+
+  if handleMessageCallback then
+    handleMessageCallback(activeMessages)
+  end
+end
 
 function PlayState.handleSchedule()
   state.ghci:send("getnow >>= print . sam", nil, LOCK_SAM)
@@ -78,8 +156,8 @@ function PlayState.parse(list)
   local result = {}
 
   for _, raw in ipairs(list) do
-    for _, parsed in ipairs(playStateParser.parse(raw)) do
-      table.insert(result, parsed)
+    for key, parsed in pairs(playStateParser.parse(raw)) do
+      result[key] = parsed
     end
   end
 
@@ -92,19 +170,21 @@ function PlayState.onDataProcessed(output)
       removeFirstAndLast(output)
       local sam = convertHaskelRatio(output[1])
 
-      if #currentPlayState == 0 then
+      handleEvents(sam, activeEvents, currentPlayState)
+
+      if next(currentPlayState) == nil then
         PlayState.getPlayState(sam, sam + 4, LOCK_INIT_PLAYSTATE)
       end
 
-      if PlayState.sam ~= sam then
+      if PlayState.sam == nil then
+        PlayState.sam = sam
+      elseif math.floor(PlayState.sam) ~= math.floor(sam) then
         PlayState.sam = sam
 
-        if #currentPlayState > 0 then
+        if next(currentPlayState) ~= nil then
           PlayState.getPlayState(sam + 3, sam + 4, LOCK_EXTEND_PLAYSTATE)
         end
       end
-
-      handleEvents()
 
       return
     end
@@ -115,8 +195,8 @@ function PlayState.onDataProcessed(output)
 
       local parsedOutput = PlayState.parse(output)
 
-      for _, parsed in ipairs(parsedOutput) do
-        table.insert(currentPlayState, parsed)
+      for key, parsed in pairs(parsedOutput) do
+        currentPlayState[key] = parsed
       end
 
       PlayState._currentPlayState = currentPlayState
@@ -128,8 +208,11 @@ function PlayState.onDataProcessed(output)
       removeFirstAndLast(output)
       PlayState._lastReceivedPlayState = output
       local parsedOutput = PlayState.parse(output)
+
       currentPlayState = parsedOutput
+
       PlayState._currentPlayState = currentPlayState
+
       return
     end
   end
@@ -149,5 +232,6 @@ function PlayState.getPlayState(start, stop, lock)
 end
 
 PlayState._handleEvents = handleEvents
+PlayState._diff = diff
 
 return PlayState

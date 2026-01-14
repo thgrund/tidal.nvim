@@ -21,7 +21,8 @@ function EventHighlights.start(highlight)
   osc.setInterval(fpsToMs)
 
   -- playstate.launch()
-  -- playstate.setInterval(1000)
+  -- playstate.handleMessageCallback = highlight.highlightCallback
+  -- playstate.setInterval(fpsToMs)
 end
 
 function EventHighlights.stop()

@@ -32,6 +32,14 @@ describe("PlayState", function()
       eq(process.sam, 100)
     end)
 
+    it("extract SAM with fraction correctly", function()
+      local sam = { "SAM_START", "1 % 3", "SAM_END" }
+
+      process.onDataProcessed(sam)
+
+      eq(process.sam, (1 / 3))
+    end)
+
     it("triggers getPlayState with LOCK_INIT_PLAYSTATE when sam was received and currentPlaystate is empty", function()
       local getLockName = nil
       local getStart = nil
@@ -100,6 +108,30 @@ describe("PlayState", function()
       process.onDataProcessed(sam)
       assert.truthy(getCurrent_called)
     end)
+    it("do not triggers getPlayState when same SAM but with fraction was received", function()
+      local getCurrent_called = false
+      local sam = { "SAM_START", "501 % 5 ", "SAM_END" }
+      process.getPlayState = function(_, _, _)
+        getCurrent_called = true
+      end
+
+      process.sam = 100
+
+      process.onDataProcessed(sam)
+      assert.falsy(getCurrent_called)
+    end)
+    it("do not triggers getPlayState when same SAM but with fraction over > .5 was received", function()
+      local getCurrent_called = false
+      local sam = { "SAM_START", " 503 % 5 ", "SAM_END" }
+      process.getPlayState = function(_, _, _)
+        getCurrent_called = true
+      end
+
+      process.sam = 100
+
+      process.onDataProcessed(sam)
+      assert.falsy(getCurrent_called)
+    end)
 
     it("extract INIT_PLAYSTATE correctly", function()
       local state = {
@@ -130,7 +162,7 @@ describe("PlayState", function()
       }
       process.onDataProcessed(initState)
 
-      testMe = { { colStart = 8, eventId = 2, id = "1", whole = { start = 0, stop = 1 } } }
+      testMe = { ["2-8"] = { colStart = 8, eventId = 2, id = "1", whole = { start = 0, stop = 1 } } }
 
       eq(process._currentPlayState, testMe)
 
@@ -142,7 +174,7 @@ describe("PlayState", function()
 
       process.onDataProcessed(extendState)
       testMe = {
-        { colStart = 17, eventId = 3, id = "2", whole = { start = 0, stop = 3 } },
+        ["3-17"] = { colStart = 17, eventId = 3, id = "2", whole = { start = 0, stop = 3 } },
       }
       eq(process._currentPlayState, testMe)
     end)
@@ -156,7 +188,7 @@ describe("PlayState", function()
       }
       process.onDataProcessed(initState)
 
-      testMe = { { colStart = 8, eventId = 2, id = "1", whole = { start = 0, stop = 1 } } }
+      testMe = { ["2-8"] = { colStart = 8, eventId = 2, id = "1", whole = { start = 0, stop = 1 } } }
 
       eq(process._currentPlayState, testMe)
 
@@ -168,9 +200,10 @@ describe("PlayState", function()
 
       process.onDataProcessed(extendState)
       testMe = {
-        { colStart = 8, eventId = 2, id = "1", whole = { start = 0, stop = 1 } },
-        { colStart = 17, eventId = 3, id = "2", whole = { start = 0, stop = 3 } },
+        ["2-8"] = { colStart = 8, eventId = 2, id = "1", whole = { start = 0, stop = 1 } },
+        ["3-17"] = { colStart = 17, eventId = 3, id = "2", whole = { start = 0, stop = 3 } },
       }
+
       eq(process._currentPlayState, testMe)
     end)
   end)
@@ -179,14 +212,142 @@ describe("PlayState", function()
     it("should return the expected parsed events", function()
       local plain = {
         '[((8,2),(18,2)),((30,2),(31,2))](0>1)|_id_: "1", note: 0.0n (c5), orbit: 0, s: "superpiano"',
-        '[((17,2),(27,2)),((38,2),(39,2))]0-(1>2)-3|_id_: "1", note: 9.0n (a5), orbit: 0, s: "superpiano"',
-        '[((19,2),(29,2)),((40,2),(41,2))]0-(2>2½)|_id_: "1", note: 9.0n (a5), orbit: 0, s: "superpiano"',
-        '[((19,2),(29,2)),((40,2),(41,2))](2½>3)-5|_id_: "1", note: 9.0n (a5), orbit: 0, s: "superpiano"',
+        '[((17,3),(27,3)),((38,3),(39,3))]0-(1>2)-3|_id_: "1", note: 9.0n (a5), orbit: 0, s: "superpiano"',
+        '[((19,4),(29,4)),((40,4),(41,4))]0-(2>2½)|_id_: "1", note: 9.0n (a5), orbit: 0, s: "superpiano"',
+        '[((19,5),(29,5)),((40,5),(41,5))](2½>3)-5|_id_: "1", note: 9.0n (a5), orbit: 0, s: "superpiano"',
       }
 
       local testMe = process.parse(plain)
 
-      eq(#testMe, 8)
+      local count = 0
+
+      for _ in pairs(testMe) do
+        count = count + 1
+      end
+
+      eq(count, 8)
+    end)
+  end)
+
+  describe("diff", function()
+    it("should add past events to removed", function()
+      local prevActive = {
+        ["2-8"] = {
+          id = "1",
+          eventId = 2,
+          colStart = 8,
+          whole = {
+            start = 0,
+            stop = 1,
+          },
+        },
+        ["2-30"] = {
+          id = "1",
+          eventId = 2,
+          colStart = 30,
+          whole = {
+            start = 0,
+            stop = 1,
+          },
+        },
+      }
+
+      local current = prevActive
+
+      local futureSam = 2
+
+      local testme = process._diff(futureSam, prevActive, current)
+
+      table.sort(testme.remove)
+      table.sort(testme.add)
+      table.sort(testme.active)
+
+      local expected = { remove = { "2-30", "2-8" }, add = {}, active = {} }
+
+      table.sort(expected.remove)
+      table.sort(expected.add)
+      table.sort(expected.active)
+
+      eq(testme, expected)
+    end)
+
+    it(
+      "should add current events to add, if they are not in prevActive but in current and whole is within now",
+      function()
+        local prevActive = {
+          ["2-8"] = {
+            id = "1",
+            eventId = 2,
+            colStart = 8,
+            whole = {
+              start = 0,
+              stop = 1,
+            },
+          },
+        }
+        local current = {
+          ["2-8"] = {
+            id = "1",
+            eventId = 2,
+            colStart = 8,
+            whole = {
+              start = 0,
+              stop = 1,
+            },
+          },
+          ["2-30"] = {
+            id = "1",
+            eventId = 2,
+            colStart = 30,
+            whole = {
+              start = 0,
+              stop = 1,
+            },
+          },
+        }
+
+        local testme = process._diff(0.5, prevActive, current)
+        local expected = { remove = {}, add = { "2-30" }, active = { "2-8" } }
+
+        eq(testme, expected)
+      end
+    )
+
+    it("should add current events to active, if they are in prevActive and whole is within now", function()
+      local prevActive = {
+        ["2-8"] = {
+          id = "1",
+          eventId = 2,
+          colStart = 8,
+          whole = {
+            start = 0,
+            stop = 1,
+          },
+        },
+        ["2-30"] = {
+          id = "1",
+          eventId = 2,
+          colStart = 30,
+          whole = {
+            start = 0,
+            stop = 1,
+          },
+        },
+      }
+
+      local current = prevActive
+
+      local testme = process._diff(0.5, prevActive, current)
+      table.sort(testme.remove)
+      table.sort(testme.add)
+      table.sort(testme.active)
+
+      local expected = { remove = {}, add = {}, active = { "2-8", "2-30" } }
+      table.sort(expected.remove)
+      table.sort(expected.add)
+      table.sort(expected.active)
+
+      eq(testme, expected)
     end)
   end)
 end)

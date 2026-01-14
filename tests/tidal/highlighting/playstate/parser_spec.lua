@@ -226,7 +226,7 @@ describe("PlayStateParser", function()
       local passedIn = playStateParser.parse(plain)
 
       local expected = {
-        {
+        ["2-8"] = {
           id = "1",
           eventId = 2,
           colStart = 8,
@@ -246,7 +246,7 @@ describe("PlayStateParser", function()
       local passedIn = playStateParser.parse(plain)
 
       local expected = {
-        {
+        ["2-8"] = {
           id = "1",
           eventId = 2,
           colStart = 8,
@@ -255,7 +255,7 @@ describe("PlayStateParser", function()
             stop = 1,
           },
         },
-        {
+        ["2-30"] = {
           id = "1",
           eventId = 2,
           colStart = 30,
@@ -274,7 +274,7 @@ describe("PlayStateParser", function()
       local passedIn = playStateParser.parse(plain)
 
       local expected = {
-        {
+        ["2-8"] = {
           id = "1",
           eventId = 2,
           colStart = 8,
@@ -294,7 +294,7 @@ describe("PlayStateParser", function()
       local passedIn = playStateParser.parse(plain)
 
       local expected = {
-        {
+        ["2-8"] = {
           id = "1",
           eventId = 2,
           colStart = 8,
@@ -314,7 +314,7 @@ describe("PlayStateParser", function()
       local passedIn = playStateParser.parse(plain)
 
       local expected = {
-        {
+        ["2-8"] = {
           id = "1",
           eventId = 2,
           colStart = 8,
