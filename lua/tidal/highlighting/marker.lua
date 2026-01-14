@@ -10,7 +10,7 @@ local Marker = {}
 ---
 
 ---@class TidalExtMark
----@field id integer
+---@field id? string
 ---@field buf integer
 ---@field markerId integer
 ---@field colStart integer
@@ -19,6 +19,7 @@ local Marker = {}
 ---@field functionName string
 ---@field quoteIndex integer
 ---@field originalText string
+---@field whole? TidalWhole
 
 ---@alias TidalExtMarkMap table<string, TidalExtMark>
 ---@alias TidalExtMarks table<integer, TidalExtMarkMap>

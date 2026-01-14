@@ -5,6 +5,8 @@ local Buffer = require("tidal.util.buffer")
 ---@field proc? integer
 ---@field opts ReplOpts
 ---@field onDataProcessed? fun(table<string>)
+---@field hushCallback fun()
+---@field sendCallback fun()
 ---@field lockedStdOut table<string>
 local Repl = {}
 Repl.__index = Repl
@@ -30,6 +32,8 @@ function Repl:new(opts)
   obj.stdin = {}
   obj.proc = nil
   obj.lockedStdOut = {}
+
+  self.sendCallback = function() end
 
   return obj
 end
@@ -109,9 +113,6 @@ function Repl:start(opts)
 
   self.opts = vim.tbl_deep_extend("force", {}, self.opts, opts or {})
 
-  self.lockStart = nil
-  self.lockEnd = nil
-
   self.stdin = uv.new_pipe(false)
   self.stdout, self.stderr = uv.new_pipe(false), uv.new_pipe(false)
 
@@ -164,6 +165,8 @@ end
 --- @return T for method chaining
 function Repl:send(text, start, lockName)
   local isLocked = false
+  local isHushed = false
+
   if lockName ~= 0 and lockName ~= nil then
     isLocked = true
 
@@ -184,6 +187,7 @@ function Repl:send(text, start, lockName)
       if line:match("^hush") ~= nil then
         marker.deleteAllMarkers()
         tokenizer.lastEventId = 0
+
         vim.api.nvim_exec_autocmds("User", { pattern = "TidalHush", modeline = false })
       end
     end
@@ -199,6 +203,8 @@ function Repl:send(text, start, lockName)
       self.stdin:write('\n:{\nputStrLn "' .. lockName .. '_END"\n:}\n')
     else
       self.stdin:write(text)
+
+      self.sendCallback()
     end
   end
 

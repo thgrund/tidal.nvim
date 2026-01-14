@@ -136,6 +136,7 @@ function M.mapPos(str)
   return result
 end
 
+---@return TidalEvent[]
 function M.parse(line)
   local extracted = M.extract(line)
   local pos = M.mapPos(extracted[1])

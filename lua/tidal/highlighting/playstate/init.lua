@@ -5,8 +5,19 @@ local state = require("tidal.core.state")
 
 local uv = vim.uv
 
+---@class TidalEvent
+---@field id string
+---@field eventId integer
+---@field colStart integer
+---@field whole TidalWhole
+---
+---@class TidalWhole
+---@field start number
+---@field stop number
+
 function PlayState.launch()
   state.ghci.onDataProcessed = process.onDataProcessed
+  state.ghci.sendCallback = process.reset
 end
 
 function PlayState.setInterval(interval)

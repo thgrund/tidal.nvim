@@ -3,17 +3,18 @@ local PlayState = {}
 local playStateParser = require("tidal.highlighting.playstate.parser")
 local state = require("tidal.core.state")
 
-local uv = vim.uv
-
 local LOCK_SAM = "SAM"
 local LOCK_INIT_PLAYSTATE = "INIT_PLAYSTATE"
 local LOCK_EXTEND_PLAYSTATE = "EXTEND_PLAYSTATE"
 
+---@type TidalEvent[]
 local currentPlayState = {}
+local activeEvents = {}
 
 PlayState.timer = nil
 PlayState.sam = nil
 PlayState._lastReceivedPlayState = nil
+PlayState._currentPlayState = {}
 
 local function removeFirstAndLast(t)
   if not t or type(t) ~= "table" or #t < 2 then
@@ -46,10 +47,33 @@ local function startsWith(str, start)
   return str:sub(1, #start) == start
 end
 
+---
+--- @param sam number
+--- @param activeEvents TidalEvent[]
+--- @param currentEvents TidalEvent[]
+local function diff(sam, active, current)
+  local removed = {}
+  local added = {}
+  local active = {}
+
+  return {
+    removed = removed,
+    added = added,
+    active = active,
+  }
+end
+
+local function handleEvents() end
+
 function PlayState.handleSchedule()
   state.ghci:send("getnow >>= print . sam", nil, LOCK_SAM)
 end
 
+--- Parses and maps a list of tidal event state strings like
+--- [((8,2),(18,2))]0-(1>2)-3|_id_: "1", orbit: 0, s: "superpiano"
+--- so that can be processed.
+---@param list string[]
+---@return TidalEvent[]
 function PlayState.parse(list)
   local result = {}
 
@@ -68,21 +92,35 @@ function PlayState.onDataProcessed(output)
       removeFirstAndLast(output)
       local sam = convertHaskelRatio(output[1])
 
+      if #currentPlayState == 0 then
+        PlayState.getPlayState(sam, sam + 4, LOCK_INIT_PLAYSTATE)
+      end
+
       if PlayState.sam ~= sam then
         PlayState.sam = sam
-        PlayState.getPlayState(sam + 3, sam + 4, LOCK_EXTEND_PLAYSTATE)
+
+        if #currentPlayState > 0 then
+          PlayState.getPlayState(sam + 3, sam + 4, LOCK_EXTEND_PLAYSTATE)
+        end
       end
+
+      handleEvents()
+
       return
     end
 
     if startsWith(output[1], LOCK_EXTEND_PLAYSTATE) then
       removeFirstAndLast(output)
       PlayState._lastReceivedPlayState = output
+
       local parsedOutput = PlayState.parse(output)
 
       for _, parsed in ipairs(parsedOutput) do
         table.insert(currentPlayState, parsed)
       end
+
+      PlayState._currentPlayState = currentPlayState
+
       return
     end
 
@@ -91,9 +129,14 @@ function PlayState.onDataProcessed(output)
       PlayState._lastReceivedPlayState = output
       local parsedOutput = PlayState.parse(output)
       currentPlayState = parsedOutput
+      PlayState._currentPlayState = currentPlayState
       return
     end
   end
+end
+
+function PlayState.reset()
+  currentPlayState = {}
 end
 
 ---Requests the playstate from TidalCycles
@@ -104,5 +147,7 @@ function PlayState.getPlayState(start, stop, lock)
     state.ghci:send("streamActivePt tidal (Arc " .. start .. " " .. stop .. ")", nil, lock)
   end
 end
+
+PlayState._handleEvents = handleEvents
 
 return PlayState

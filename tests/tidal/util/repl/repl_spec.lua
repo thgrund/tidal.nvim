@@ -5,6 +5,7 @@
 ---
 
 local mock = require("luassert.mock")
+local spy = require("luassert.spy")
 local stub = require("luassert.stub")
 
 -- Save original functions
@@ -219,20 +220,33 @@ describe("Repl", function()
       assert.matches("bar@2", written)
     end)
 
-    it("handles hush by clearing markers and firing autocmd", function()
+    it("execute only sendCallback when send was triggered", function()
+      fake_pipe.write = function(_, _) end
+
+      local r = Repl:new({ cmd = "ghci" })
+      r.sendCallback = spy.new(function() end)
+      r.stdin = vim.loop.new_pipe()
+      r.proc = fake_proc
+
+      r:send("foo\nbar", { 0 })
+      assert.spy(r.sendCallback).was_called()
+    end)
+
+    it("handles hush by clearing markers, firing autocmd and executing sendCallback", function()
       local marker = mock(require("tidal.highlighting.marker"), true)
       local autocmd_stub = stub(vim.api, "nvim_exec_autocmds")
       local tokenizer = require("tidal.highlighting.tokenizer")
 
       local r = Repl:new({ cmd = "ghci" })
+      r.sendCallback = spy.new(function() end)
       r.stdin = vim.loop.new_pipe()
       r.proc = fake_proc
-
       r:send("hush", { 0 })
 
       assert.stub(marker.deleteAllMarkers).was_called()
       assert.equals(0, tokenizer.lastEventId)
       assert.stub(autocmd_stub).was_called()
+      assert.spy(r.sendCallback).was_called()
     end)
 
     it("writes locked text with proper markers", function()
