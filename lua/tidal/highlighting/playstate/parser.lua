@@ -56,34 +56,6 @@ function M.extract(input)
   }
 end
 
-local function split(str, seps)
-  local result = {}
-
-  -- convert single string separator to table
-  if type(seps) == "string" then
-    seps = { seps }
-  end
-
-  -- escape special pattern characters
-  local pattern_seps = {}
-  for _, s in ipairs(seps) do
-    s = s:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
-    table.insert(pattern_seps, s)
-  end
-
-  -- build pattern: match sequences not containing any separator
-  local pattern = "[^" .. table.concat(pattern_seps) .. "]+"
-
-  -- match all parts
-  for part in string.gmatch(str, pattern) do
-    -- remove all brackets from the part
-    part = part:gsub("[%[%]%(%)]", "")
-    table.insert(result, part)
-  end
-
-  return result
-end
-
 local fractionToDecimal = {
   ["½"] = 0.5,
   ["⅓"] = 0.333,
