@@ -118,15 +118,45 @@ local function replaceFractions(str)
   return str:gsub("0%.", ".")
 end
 
-function M.mapWhole(plain)
-  plain = replaceFractions(plain)
+local function tupleToNumber(tuple)
+  -- remove surrounding parentheses
+  local inner = tuple:sub(2, -2)
 
-  local splitted = split(plain, { "-", "<" })
-
-  if #splitted >= 2 then
-    return { start = tonumber(splitted[1]), stop = tonumber(splitted[#splitted]) }
+  -- split "cycle,fraction"
+  local cycle, frac = inner:match("^%s*(-?%d+)%s*,%s*(%d+/%d+)%s*$")
+  if not cycle or not frac then
+    return nil
   end
+
+  local num, den = frac:match("^(%d+)%/(%d+)$")
+  if not num or not den then
+    return nil
+  end
+
+  return tonumber(cycle) + tonumber(num) / tonumber(den)
 end
+
+function M.mapWhole(plain)
+  if not plain then
+    return nil
+  end
+
+  local tuples = {}
+
+  for tuple in plain:gmatch("%(%s*-?%d+%s*,%s*%d+/%d+%s*%)") do
+    table.insert(tuples, tuple)
+  end
+
+  if #tuples < 2 then
+    return nil
+  end
+
+  return {
+    start = tupleToNumber(tuples[1]),
+    stop = tupleToNumber(tuples[#tuples]),
+  }
+end
+
 function M.mapPos(str)
   local result = {}
 
