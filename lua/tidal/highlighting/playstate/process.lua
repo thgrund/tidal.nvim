@@ -1,4 +1,4 @@
-local PlayState = {}
+local PlayStateProcessor = {}
 
 local highlight = require("tidal.highlighting.highlights")
 local marker = require("tidal.highlighting.marker")
@@ -15,10 +15,10 @@ local currentPlayState = {}
 --- @type table<string, TidalEvent>
 local activeEvents = {}
 
-PlayState.timer = nil
-PlayState.sam = nil
-PlayState._lastReceivedPlayState = nil
-PlayState._currentPlayState = {}
+PlayStateProcessor.timer = nil
+PlayStateProcessor.sam = nil
+PlayStateProcessor._lastReceivedPlayState = nil
+PlayStateProcessor._currentPlayState = {}
 
 local handleMessageCallback = nil
 
@@ -105,7 +105,7 @@ local function getExtMark(id)
 end
 
 local function handleEvents()
-  local events = diff(PlayState.sam, activeEvents, currentPlayState)
+  local events = diff(PlayStateProcessor.sam, activeEvents, currentPlayState)
 
   for _, id in ipairs(events.remove) do
     local extmark = getExtMark(id)
@@ -142,7 +142,7 @@ local function handleEvents()
   -- end
 end
 
-function PlayState.handleSchedule()
+function PlayStateProcessor.handleSchedule()
   state.ghci:send("getnow", nil, LOCK_SAM)
 end
 
@@ -151,11 +151,11 @@ end
 --- so that can be processed.
 ---@param list string[]
 ---@return table<string, TidalEvent>
-function PlayState.parse(list)
+function PlayStateProcessor.parse(list)
   local result = {}
 
   for _, raw in ipairs(list) do
-    for key, parsed in pairs(playStateParser.parse(raw)) do
+    for key, parsed in pairs(playStateParser.parse(raw, math.floor(PlayStateProcessor.sam))) do
       result[key] = parsed
     end
   end
@@ -163,7 +163,7 @@ function PlayState.parse(list)
   return result
 end
 
-function PlayState.onDataProcessed(output)
+function PlayStateProcessor.onDataProcessed(output)
   if #output > 2 then
     if startsWith(output[1], LOCK_SAM) then
       removeFirstAndLast(output)
@@ -173,15 +173,17 @@ function PlayState.onDataProcessed(output)
         return
       end
 
-      PlayState.sam = sam
+      local prevSam = PlayStateProcessor.sam
+
+      PlayStateProcessor.sam = sam
       local intSam = math.floor(sam)
 
       if next(currentPlayState) == nil then
-        PlayState.getPlayState(intSam, intSam + 4, LOCK_INIT_PLAYSTATE)
+        PlayStateProcessor.getPlayState(intSam, intSam + 4, LOCK_INIT_PLAYSTATE)
       end
 
-      if math.floor(PlayState.sam) ~= intSam and next(currentPlayState) ~= nil then
-        PlayState.getPlayState(intSam + 3, intSam + 4, LOCK_EXTEND_PLAYSTATE)
+      if prevSam ~= nil and math.floor(prevSam) ~= intSam and next(currentPlayState) ~= nil then
+        PlayStateProcessor.getPlayState(intSam + 3, intSam + 4, LOCK_EXTEND_PLAYSTATE)
       end
 
       handleEvents()
@@ -192,15 +194,15 @@ function PlayState.onDataProcessed(output)
     if startsWith(output[1], LOCK_EXTEND_PLAYSTATE) then
       output = removeFirstAndLast(output)
 
-      PlayState._lastReceivedPlayState = output
+      PlayStateProcessor._lastReceivedPlayState = output
 
-      local parsedOutput = PlayState.parse(output)
+      local parsedOutput = PlayStateProcessor.parse(output)
 
       for key, parsed in pairs(parsedOutput) do
         currentPlayState[key] = parsed
       end
 
-      PlayState._currentPlayState = currentPlayState
+      PlayStateProcessor._currentPlayState = currentPlayState
 
       return
     end
@@ -208,19 +210,19 @@ function PlayState.onDataProcessed(output)
     if startsWith(output[1], LOCK_INIT_PLAYSTATE) then
       output = removeFirstAndLast(output)
 
-      PlayState._lastReceivedPlayState = output
-      local parsedOutput = PlayState.parse(output)
+      PlayStateProcessor._lastReceivedPlayState = output
+      local parsedOutput = PlayStateProcessor.parse(output)
 
       currentPlayState = parsedOutput
 
-      PlayState._currentPlayState = currentPlayState
+      PlayStateProcessor._currentPlayState = currentPlayState
 
       return
     end
   end
 end
 
-function PlayState.reset()
+function PlayStateProcessor.reset()
   currentPlayState = {}
   activeEvents = {}
 end
@@ -228,13 +230,13 @@ end
 ---Requests the playstate from TidalCycles
 ---@param start integer
 ---@param stop integer
-function PlayState.getPlayState(start, stop, lock)
+function PlayStateProcessor.getPlayState(start, stop, lock)
   if start and stop then
     state.ghci:send("streamActivePt tidal (Arc " .. start .. " " .. stop .. ")", nil, lock)
   end
 end
 
-PlayState._handleEvents = handleEvents
-PlayState._diff = diff
+PlayStateProcessor._handleEvents = handleEvents
+PlayStateProcessor._diff = diff
 
-return PlayState
+return PlayStateProcessor

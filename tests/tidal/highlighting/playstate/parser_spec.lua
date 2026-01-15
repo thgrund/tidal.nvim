@@ -20,45 +20,46 @@ describe("PlayStateParser", function()
 
   describe("extract", function()
     it("should map playstate within one circle correctly", function()
-      local plain = '[((8,2),(18,2))](0>1)|_id_: "1",orbit: 0, s: "superpiano"'
+      local plain = '[((8,2),(18,2))]((0,0/1)<(1,0/1))|_id_: "1",orbit: 0, s: "superpiano"'
 
       local testMe = playStateParser.extract(plain)
-      local expected = { "[((8,2),(18,2))]", "(0>1)", "1" }
+      local expected = { "[((8,2),(18,2))]", "((0,0/1)<(1,0/1))", "1" }
 
       eq(testMe, expected)
     end)
 
     it("should map multiple events within one cycle", function()
-      local plain = '[((8,2),(18,2)),((30,2),(31,2))](0>1)|_id_: "1", note: 0.0n (c5), orbit: 0, s: "superpiano"'
+      local plain =
+        '[((8,2),(18,2)),((30,2),(31,2))]((0,0/1)<(1,0/1))|_id_: "1", note: 0.0n (c5), orbit: 0, s: "superpiano"'
 
       local testMe = playStateParser.extract(plain)
-      local expected = { "[((8,2),(18,2)),((30,2),(31,2))]", "(0>1)", "1" }
+      local expected = { "[((8,2),(18,2)),((30,2),(31,2))]", "((0,0/1)<(1,0/1))", "1" }
 
       eq(testMe, expected)
     end)
 
     it("should map event with past start and future stop correctly", function()
-      local plain = '[((8,2),(18,2))]0-(1>2)-3|_id_: "1", orbit: 0, s: "superpiano"'
+      local plain = '[((8,2),(18,2))](0,0/1)-((1,0/1)<(2,0/1))-(3,0/1)|_id_: "1", orbit: 0, s: "superpiano"'
 
       local testMe = playStateParser.extract(plain)
-      local expected = { "[((8,2),(18,2))]", "0-(1>2)-3", "1" }
+      local expected = { "[((8,2),(18,2))]", "(0,0/1)-((1,0/1)<(2,0/1))-(3,0/1)", "1" }
 
       eq(testMe, expected)
     end)
 
     it("should map event with past start correctly", function()
-      local plain = '[((8,2),(18,2)))]0-(2>2½)|_id_: "1", orbit: 0, s: "superpiano"'
+      local plain = '[((8,2),(18,2)))](0,0/1)-((2,0/1)<(2,1/2))|_id_: "1", orbit: 0, s: "superpiano"'
 
       local testMe = playStateParser.extract(plain)
-      local expected = { "[((8,2),(18,2)))]", "0-(2>2½)", "1" }
+      local expected = { "[((8,2),(18,2)))]", "(0,0/1)-((2,0/1)<(2,1/2))", "1" }
 
       eq(testMe, expected)
     end)
     it("should map event with future stop correctly", function()
-      local plain = '[((8,2),(18,2))](2½>3)-5|_id_: "1", orbit: 0, s: "superpiano"'
+      local plain = '[((8,2),(18,2))]((2,1/2)<(3,0/1))-(5,0/1)|_id_: "1", orbit: 0, s: "superpiano"'
 
       local testMe = playStateParser.extract(plain)
-      local expected = { "[((8,2),(18,2))]", "(2½>3)-5", "1" }
+      local expected = { "[((8,2),(18,2))]", "((2,1/2)<(3,0/1))-(5,0/1)", "1" }
 
       eq(testMe, expected)
     end)
@@ -66,33 +67,37 @@ describe("PlayStateParser", function()
 
   describe("mapWhole", function()
     it("should map whole within a cycle", function()
-      local plain = "(0>1)"
+      -- local old = "(0>1)"
+      local plain = "((0,0/1)<(1,0/1))"
       local testMe = playStateParser.mapWhole(plain)
       local expected = { start = 0, stop = 1 }
 
-      eq(testMe, expected)
+      eq(expected, testMe)
     end)
 
     it("should map whole with past start and future stop", function()
-      local plain = "0-(1>2)-3"
+      --local old = "0-(1>2)-3"
+      local plain = "(0,0/1)-((1,0/1)<(2,0/1))-(3,0/1)"
       local testMe = playStateParser.mapWhole(plain)
       local expected = { start = 0, stop = 3 }
 
-      eq(testMe, expected)
+      eq(expected, testMe)
     end)
     it("should map whole within past start", function()
-      local plain = "0-(2>2½)"
+      -- local old = "0-(2>2½)"
+      local plain = "(0,0/1)-((2,0/1)<(2,1/2))"
       local testMe = playStateParser.mapWhole(plain)
       local expected = { start = 0, stop = 2.5 }
 
-      eq(testMe, expected)
+      eq(expected, testMe)
     end)
     it("should map whole within future stop", function()
-      local plain = "(2½>3)-5"
+      --local old = "(2½>3)-5"
+      local plain = "((2,1/2)<(3,0/1))-(5,0/1)"
       local testMe = playStateParser.mapWhole(plain)
       local expected = { start = 2.5, stop = 5 }
 
-      eq(testMe, expected)
+      eq(expected, testMe)
     end)
   end)
 

@@ -109,13 +109,19 @@ local function replaceFractions(str)
   for unicode, decimal in pairs(fractionToDecimal) do
     str = str:gsub(unicode, tostring(decimal))
   end
+
+  -- Handle fractions with "/" like "15/16"
+  str = str:gsub("(%d+)/(%d+)", function(numerator, denominator)
+    return tostring(tonumber(numerator) / tonumber(denominator))
+  end)
+
   return str:gsub("0%.", ".")
 end
 
 function M.mapWhole(plain)
   plain = replaceFractions(plain)
 
-  local splitted = split(plain, { "-", ">" })
+  local splitted = split(plain, { "-", "<" })
 
   if #splitted >= 2 then
     return { start = tonumber(splitted[1]), stop = tonumber(splitted[#splitted]) }
@@ -148,16 +154,18 @@ function M.parse(line)
   local pos = M.mapPos(extracted[1])
   local result = {}
 
-  for i = 1, #pos, 2 do
-    local colStart = pos[i][1] + 1
-    local eventId = pos[i][2] - 1
-    local whole = M.mapWhole(extracted[2])
-    result[M.genEventId()] = {
-      id = extracted[3],
-      colStart = colStart,
-      eventId = eventId,
-      whole = whole,
-    }
+  if #line > 0 then
+    for i = 1, #pos, 2 do
+      local colStart = pos[i][1] + 1
+      local eventId = pos[i][2] - 1
+      local whole = M.mapWhole(extracted[2])
+      result[M.genEventId()] = {
+        id = extracted[3],
+        colStart = colStart,
+        eventId = eventId,
+        whole = whole,
+      }
+    end
   end
 
   return result
