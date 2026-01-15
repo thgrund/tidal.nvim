@@ -4,6 +4,7 @@ local orig_schedule
 
 describe("PlayState", function()
   local process
+  local parser
 
   local eq = assert.are.same
 
@@ -16,6 +17,10 @@ describe("PlayState", function()
     }
 
     process = require("tidal.highlighting.playstate.process")
+    parser = require("tidal.highlighting.playstate.parser")
+
+    process._currentPlayState = {}
+    process._lastReceivedPlayState = {}
   end)
 
   after_each(function()
@@ -153,6 +158,18 @@ describe("PlayState", function()
       })
     end)
 
+    it("handles empty INIT_PLAYSTATE correctly", function()
+      local state = {
+        "INIT_PLAYSTATE_START",
+        "INIT_PLAYSTATE_END",
+      }
+
+      process.onDataProcessed(state)
+
+      eq(process._lastReceivedPlayState, {})
+      eq(next(process._lastReceivedPlayState), nil)
+    end)
+
     it("Overrided the playstate when INIT_PLAYSTART was received", function()
       local testMe
       local initState = {
@@ -160,9 +177,17 @@ describe("PlayState", function()
         '[((8,2),(18,2)))](0>1)|_id_: "1", orbit: 0, s: "superpiano"',
         "INIT_PLAYSTATE_END",
       }
+
+      local eventIds = { "XRKUfOvTA", "UIhicEQF1" }
+      parser.genEventId = function()
+        local eventId = eventIds[1]
+        table.remove(eventIds, 1)
+        return eventId
+      end
+
       process.onDataProcessed(initState)
 
-      testMe = { ["2-8"] = { colStart = 8, eventId = 2, id = "1", whole = { start = 0, stop = 1 } } }
+      testMe = { ["XRKUfOvTA"] = { colStart = 9, eventId = 1, id = "1", whole = { start = 0, stop = 1 } } }
 
       eq(process._currentPlayState, testMe)
 
@@ -174,21 +199,30 @@ describe("PlayState", function()
 
       process.onDataProcessed(extendState)
       testMe = {
-        ["3-17"] = { colStart = 17, eventId = 3, id = "2", whole = { start = 0, stop = 3 } },
+        ["UIhicEQF1"] = { colStart = 18, eventId = 2, id = "2", whole = { start = 0, stop = 3 } },
       }
       eq(process._currentPlayState, testMe)
     end)
 
     it("Updates the initial playstate when EXTEND_PLAYSTATE was received", function()
       local testMe
+
       local initState = {
         "INIT_PLAYSTATE_START",
         '[((8,2),(18,2)))](0>1)|_id_: "1", orbit: 0, s: "superpiano"',
         "INIT_PLAYSTATE_END",
       }
+
+      local eventIds = { "XRKUfOvTA", "UIhicEQF1" }
+      parser.genEventId = function()
+        local eventId = eventIds[1]
+        table.remove(eventIds, 1)
+        return eventId
+      end
+
       process.onDataProcessed(initState)
 
-      testMe = { ["2-8"] = { colStart = 8, eventId = 2, id = "1", whole = { start = 0, stop = 1 } } }
+      testMe = { ["XRKUfOvTA"] = { colStart = 9, eventId = 1, id = "1", whole = { start = 0, stop = 1 } } }
 
       eq(process._currentPlayState, testMe)
 
@@ -199,9 +233,10 @@ describe("PlayState", function()
       }
 
       process.onDataProcessed(extendState)
+
       testMe = {
-        ["2-8"] = { colStart = 8, eventId = 2, id = "1", whole = { start = 0, stop = 1 } },
-        ["3-17"] = { colStart = 17, eventId = 3, id = "2", whole = { start = 0, stop = 3 } },
+        ["XRKUfOvTA"] = { colStart = 9, eventId = 1, id = "1", whole = { start = 0, stop = 1 } },
+        ["UIhicEQF1"] = { colStart = 18, eventId = 2, id = "2", whole = { start = 0, stop = 3 } },
       }
 
       eq(process._currentPlayState, testMe)
@@ -217,15 +252,34 @@ describe("PlayState", function()
         '[((19,5),(29,5)),((40,5),(41,5))](2½>3)-5|_id_: "1", note: 9.0n (a5), orbit: 0, s: "superpiano"',
       }
 
-      local testMe = process.parse(plain)
+      local count = 0
+
+      parser.genEventId = function()
+        count = count + 1
+        return count
+      end
+
+      process.parse(plain)
+
+      eq(count, 8)
+    end)
+
+    it("should return the expected parsed events within one are", function()
+      local plain = {
+        '[((8,2),(18,2)),((30,2),(31,2))](0>0.5)|_id_: "1", note: 0.0n (c5), orbit: 0, s: "superpiano"',
+        '[((17,3),(27,3)),((38,3),(39,3))](0.5>1)|_id_: "1", note: 9.0n (a5), orbit: 0, s: "superpiano"',
+      }
 
       local count = 0
 
-      for _ in pairs(testMe) do
+      parser.genEventId = function()
         count = count + 1
+        return count
       end
 
-      eq(count, 8)
+      process.parse(plain)
+
+      eq(count, 4)
     end)
   end)
 

@@ -37,7 +37,7 @@ local function convertHaskelRatio(s)
   local num, den = s:match("^%s*(%-?%d+)%s*%%%s*(%-?%d+)%s*$")
 
   if not num then
-    error("Invalid ratio format")
+    return nil
   end
 
   num = tonumber(num)
@@ -62,22 +62,25 @@ local function diff(sam, prevActive, current)
   local add = {}
   local active = {}
 
-  for key, tidalEvent in pairs(current) do
-    if tidalEvent.whole.stop < sam then
-      table.insert(remove, key)
-    end
+  if sam ~= nil then
+    for key, tidalEvent in pairs(current) do
+      if tidalEvent ~= nil then
+        if tidalEvent.whole.stop < sam then
+          table.insert(remove, key)
+        end
 
-    if tidalEvent.whole.start <= sam and tidalEvent.whole.stop >= sam then
-      if prevActive[key] == nil then
-        table.insert(add, key)
-      end
+        if tidalEvent.whole.start <= sam and tidalEvent.whole.stop >= sam then
+          if prevActive[key] == nil then
+            table.insert(add, key)
+          end
 
-      if prevActive[key] ~= nil then
-        table.insert(active, key)
+          if prevActive[key] ~= nil then
+            table.insert(active, key)
+          end
+        end
       end
     end
   end
-
   return {
     remove = remove,
     add = add,
@@ -101,57 +104,53 @@ local function getExtMark(id)
   return extmark
 end
 
---- @param sam number
---- @param prevActive table<string, TidalEvent>
---- @param current table<string, TidalEvent>
-local function handleEvents(sam, prevActive, current)
-  local events = diff(sam, prevActive, current)
-  local activeMessages = {}
+local function handleEvents()
+  local events = diff(PlayState.sam, activeEvents, currentPlayState)
 
   for _, id in ipairs(events.remove) do
     local extmark = getExtMark(id)
 
-    table.remove(activeEvents, id)
-    table.remove(currentPlayState, id)
-
     if extmark ~= nil then
       highlight.removeHighlight(extmark.buf, extmark.markerId)
     end
+
+    activeEvents[id] = nil
+    currentPlayState[id] = nil
   end
 
   for _, id in ipairs(events.add) do
     local extmark = getExtMark(id)
 
-    table.insert(activeEvents, currentPlayState[id])
+    activeEvents[id] = currentPlayState[id]
 
     if extmark ~= nil then
       highlight.addHighlight(extmark.id, extmark.buf, extmark.markerId)
-      table.insert(activeMessages, extmark)
+      -- table.insert(activeMessages, extmark)
     end
   end
 
-  for _, id in ipairs(events.active) do
-    local extmark = getExtMark(id)
+  -- for _, id in ipairs(events.active) do
+  --   local extmark = getExtMark(id)
 
-    if extmark ~= nil then
-      table.insert(activeMessages, extmark)
-    end
-  end
+  --   if extmark ~= nil then
+  --     table.insert(activeMessages, extmark)
+  --   end
+  -- end
 
-  if handleMessageCallback then
-    handleMessageCallback(activeMessages)
-  end
+  -- if handleMessageCallback then
+  --   handleMessageCallback(activeMessages)
+  -- end
 end
 
 function PlayState.handleSchedule()
-  state.ghci:send("getnow >>= print . sam", nil, LOCK_SAM)
+  state.ghci:send("getnow", nil, LOCK_SAM)
 end
 
 --- Parses and maps a list of tidal event state strings like
 --- [((8,2),(18,2))]0-(1>2)-3|_id_: "1", orbit: 0, s: "superpiano"
 --- so that can be processed.
 ---@param list string[]
----@return TidalEvent[]
+---@return table<string, TidalEvent>
 function PlayState.parse(list)
   local result = {}
 
@@ -170,27 +169,29 @@ function PlayState.onDataProcessed(output)
       removeFirstAndLast(output)
       local sam = convertHaskelRatio(output[1])
 
-      handleEvents(sam, activeEvents, currentPlayState)
+      if sam == nil then
+        return
+      end
+
+      PlayState.sam = sam
+      local intSam = math.floor(sam)
 
       if next(currentPlayState) == nil then
-        PlayState.getPlayState(sam, sam + 4, LOCK_INIT_PLAYSTATE)
+        PlayState.getPlayState(intSam, intSam + 4, LOCK_INIT_PLAYSTATE)
       end
 
-      if PlayState.sam == nil then
-        PlayState.sam = sam
-      elseif math.floor(PlayState.sam) ~= math.floor(sam) then
-        PlayState.sam = sam
-
-        if next(currentPlayState) ~= nil then
-          PlayState.getPlayState(sam + 3, sam + 4, LOCK_EXTEND_PLAYSTATE)
-        end
+      if math.floor(PlayState.sam) ~= intSam and next(currentPlayState) ~= nil then
+        PlayState.getPlayState(intSam + 3, intSam + 4, LOCK_EXTEND_PLAYSTATE)
       end
+
+      handleEvents()
 
       return
     end
 
     if startsWith(output[1], LOCK_EXTEND_PLAYSTATE) then
-      removeFirstAndLast(output)
+      output = removeFirstAndLast(output)
+
       PlayState._lastReceivedPlayState = output
 
       local parsedOutput = PlayState.parse(output)
@@ -205,7 +206,8 @@ function PlayState.onDataProcessed(output)
     end
 
     if startsWith(output[1], LOCK_INIT_PLAYSTATE) then
-      removeFirstAndLast(output)
+      output = removeFirstAndLast(output)
+
       PlayState._lastReceivedPlayState = output
       local parsedOutput = PlayState.parse(output)
 
@@ -220,6 +222,7 @@ end
 
 function PlayState.reset()
   currentPlayState = {}
+  activeEvents = {}
 end
 
 ---Requests the playstate from TidalCycles

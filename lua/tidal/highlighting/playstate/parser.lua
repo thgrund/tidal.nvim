@@ -113,10 +113,6 @@ local function replaceFractions(str)
 end
 
 function M.mapWhole(plain)
-  -- split string based on space
-  --
-  --
-
   plain = replaceFractions(plain)
 
   local splitted = split(plain, { "-", ">" })
@@ -136,6 +132,16 @@ function M.mapPos(str)
   return result
 end
 
+function M.genEventId()
+  local chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+  local id = {}
+  for _ = 1, 9 do
+    local idx = math.random(#chars)
+    id[#id + 1] = chars:sub(idx, idx)
+  end
+  return table.concat(id)
+end
+
 ---@return TidalEvent[]
 function M.parse(line)
   local extracted = M.extract(line)
@@ -143,11 +149,14 @@ function M.parse(line)
   local result = {}
 
   for i = 1, #pos, 2 do
-    result[pos[i][2] .. "-" .. pos[i][1]] = {
+    local colStart = pos[i][1] + 1
+    local eventId = pos[i][2] - 1
+    local whole = M.mapWhole(extracted[2])
+    result[M.genEventId()] = {
       id = extracted[3],
-      colStart = pos[i][1],
-      eventId = pos[i][2],
-      whole = M.mapWhole(extracted[2]),
+      colStart = colStart,
+      eventId = eventId,
+      whole = whole,
     }
   end
 

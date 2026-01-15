@@ -73,3 +73,9 @@ local a = nil
 if a then
   print("Klappt")
 end
+
+local a = 1
+
+local b = 1.234
+
+print(tostring(a < b))
