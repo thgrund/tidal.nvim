@@ -34,6 +34,7 @@ function Repl:new(opts)
   obj.lockedStdOut = {}
 
   self.sendCallback = function() end
+  self.hushCallback = function() end
 
   return obj
 end
@@ -74,7 +75,7 @@ function Repl:attach(pipe, label)
       end
 
       for _, line in ipairs(complete) do
-        if line == self.lockStart then
+        if line:sub(-#"_START") == "_START" then
           isLocked = true
         end
       end
@@ -83,7 +84,7 @@ function Repl:attach(pipe, label)
         for _, line in ipairs(complete) do
           table.insert(self.lockedStdOut, line)
 
-          if line == self.lockEnd then
+          if line:sub(-#"_END") == "_END" then
             self.onDataProcessed(self.lockedStdOut)
             self.lockedStdOut = {}
             isLocked = false
@@ -165,13 +166,15 @@ end
 --- @return T for method chaining
 function Repl:send(text, start, lockName)
   local isLocked = false
-  local isHushed = false
+  local lockStart
+  local lockEnd
+  local wasHushed = false
 
   if lockName ~= 0 and lockName ~= nil then
     isLocked = true
 
-    self.lockStart = lockName .. "_START"
-    self.lockEnd = lockName .. "_END"
+    lockStart = lockName .. "_START"
+    lockEnd = lockName .. "_END"
   end
 
   if start then
@@ -189,6 +192,7 @@ function Repl:send(text, start, lockName)
         tokenizer.lastEventId = 0
 
         vim.api.nvim_exec_autocmds("User", { pattern = "TidalHush", modeline = false })
+        wasHushed = true
       end
     end
 
@@ -198,9 +202,9 @@ function Repl:send(text, start, lockName)
   -- vim.notify("[tidal-fast] Repl send received", vim.log.levels.INFO)
   if self.stdin and not self.stdin:is_closing() then
     if isLocked then
-      self.stdin:write('\n:{\nputStrLn "' .. lockName .. '_START"\n:}\n')
+      self.stdin:write('\n:{\nputStrLn "' .. lockStart .. '"\n:}\n')
       self.stdin:write(text)
-      self.stdin:write('\n:{\nputStrLn "' .. lockName .. '_END"\n:}\n')
+      self.stdin:write('\n:{\nputStrLn "' .. lockEnd .. '"\n:}\n')
     else
       self.stdin:write(text)
 

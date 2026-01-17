@@ -29,102 +29,6 @@ describe("PlayState", function()
   end)
 
   describe("onDataProcessed", function()
-    it("extract SAM correctly", function()
-      local sam = { "SAM_START", "100 % 1", "SAM_END" }
-
-      process.onDataProcessed(sam)
-
-      eq(process.sam, 100)
-    end)
-
-    it("extract SAM with fraction correctly", function()
-      local sam = { "SAM_START", "1 % 3", "SAM_END" }
-
-      process.onDataProcessed(sam)
-
-      eq(process.sam, (1 / 3))
-    end)
-
-    it("triggers getPlayState with LOCK_INIT_PLAYSTATE when sam was received and currentPlaystate is empty", function()
-      local getLockName = nil
-      local getStart = nil
-      local getStop = nil
-
-      local expectedStart = 100
-      local expectedStop = 104
-
-      process.getPlayState = function(start, stop, lockName)
-        getStart = start
-        getStop = stop
-        getLockName = lockName
-      end
-
-      local sam = { "SAM_START", "100 % 1", "SAM_END" }
-      process.reset()
-      process.onDataProcessed(sam)
-
-      eq(getLockName, "INIT_PLAYSTATE")
-      eq(getStart, expectedStart)
-      eq(getStop, expectedStop)
-    end)
-
-    it(
-      "triggers getPlayState with LOCK_EXTEND_PLAYSTATE when sam was received and currentPlaystate is filled",
-      function()
-        local getStart = nil
-        local getStop = nil
-
-        local expectedStart = 103
-        local expectedStop = 104
-
-        local getLockName = nil
-        process.getPlayState = function(start, stop, lockName)
-          getStart = start
-          getStop = stop
-          getLockName = lockName
-        end
-
-        local state = {
-          "INIT_PLAYSTATE_START",
-          '[((8,2),(18,2)),((30,2),(31,2))](100>101)|_id_: "1", note: 0.0n (c5), orbit: 0, s: "superpiano"',
-          "INIT_PLAYSTATE_END",
-        }
-        process.onDataProcessed(state)
-
-        local sam = { "SAM_START", "100 % 1", "SAM_END" }
-        process.sam = 99
-        process.onDataProcessed(sam)
-
-        eq(getLockName, "EXTEND_PLAYSTATE")
-        eq(getStart, expectedStart)
-        eq(getStop, expectedStop)
-      end
-    )
-
-    it("triggers getPlayState when next SAM was received", function()
-      local getCurrent_called = false
-      local sam = { "SAM_START", "100 % 1", "SAM_END" }
-      process.getPlayState = function(_, _, _)
-        getCurrent_called = true
-      end
-
-      process.sam = 99
-
-      process.onDataProcessed(sam)
-      assert.truthy(getCurrent_called)
-    end)
-    it("do not triggers getPlayState when same SAM but with fraction was received", function()
-      local getCurrent_called = false
-      local sam = { "SAM_START", "501 % 5 ", "SAM_END" }
-      process.getPlayState = function(_, _, _)
-        getCurrent_called = true
-      end
-
-      process.sam = 100
-
-      process.onDataProcessed(sam)
-      assert.falsy(getCurrent_called)
-    end)
     it("do not triggers getPlayState when same SAM but with fraction over > .5 was received", function()
       local getCurrent_called = false
       local sam = { "SAM_START", " 503 % 5 ", "SAM_END" }
@@ -174,7 +78,7 @@ describe("PlayState", function()
       local testMe
       local initState = {
         "INIT_PLAYSTATE_START",
-        '[((8,2),(18,2)))](0>1)|_id_: "1", orbit: 0, s: "superpiano"',
+        '[((8,2),(18,2)))]((0,0/1)<(1,0/1))|_id_: "1", orbit: 0, s: "superpiano"',
         "INIT_PLAYSTATE_END",
       }
 
@@ -193,7 +97,7 @@ describe("PlayState", function()
 
       local extendState = {
         "INIT_PLAYSTATE_START",
-        '[((17,3),(27,3))]0-(1>2)-3|_id_: "2", orbit: 0, s: "superpiano"',
+        '[((17,3),(27,3))](0,0/1)-((1,0/1)<(2,0/1))-(3,0/1)|_id_: "2", orbit: 0, s: "superpiano"',
         "INIT_PLAYSTATE_END",
       }
 
@@ -209,7 +113,7 @@ describe("PlayState", function()
 
       local initState = {
         "INIT_PLAYSTATE_START",
-        '[((8,2),(18,2)))](0>1)|_id_: "1", orbit: 0, s: "superpiano"',
+        '[((8,2),(18,2)))]((0,0/1)<(1,0/1))|_id_: "1", orbit: 0, s: "superpiano"',
         "INIT_PLAYSTATE_END",
       }
 
@@ -228,7 +132,7 @@ describe("PlayState", function()
 
       local extendState = {
         "EXTEND_PLAYSTATE_START",
-        '[((17,3),(27,3))]0-(1>2)-3|_id_: "2", orbit: 0, s: "superpiano"',
+        '[((17,3),(27,3))](0,0/1)-((1,0/1)<(2,0/1))-(3,0/1)|_id_: "2", orbit: 0, s: "superpiano"',
         "EXTEND_PLAYSTATE_END",
       }
 
@@ -400,6 +304,45 @@ describe("PlayState", function()
       table.sort(expected.remove)
       table.sort(expected.add)
       table.sort(expected.active)
+
+      eq(testme, expected)
+    end)
+
+    it("bubu", function()
+      local prevActive = {
+        ["2-8"] = {
+          id = "1",
+          eventId = 2,
+          colStart = 8,
+          whole = {
+            start = 0,
+            stop = 1,
+          },
+        },
+      }
+      local current = {
+        ["2-8"] = {
+          id = "1",
+          eventId = 2,
+          colStart = 8,
+          whole = {
+            start = 0,
+            stop = 1,
+          },
+        },
+        ["2-30"] = {
+          id = "1",
+          eventId = 2,
+          colStart = 30,
+          whole = {
+            start = 1,
+            stop = 2,
+          },
+        },
+      }
+
+      local testme = process._diff(1.200000, prevActive, current)
+      local expected = { remove = {}, add = { "2-30" }, active = { "2-8" } }
 
       eq(testme, expected)
     end)

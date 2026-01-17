@@ -2,7 +2,7 @@ local EventHighlights = {}
 
 local config = require("tidal.config")
 local highlights = require("tidal.highlighting.highlights")
---local osc = require("tidal.highlighting.osc")
+local osc = require("tidal.highlighting.playstate.osc")
 local playstate = require("tidal.highlighting.playstate")
 
 function EventHighlights.start(highlight)
@@ -16,18 +16,18 @@ function EventHighlights.start(highlight)
     highlights.addConfigHl(id, style)
   end
 
-  -- osc.launch(highlight)
+  osc.launch(highlight)
   -- osc.handleMessageCallback = highlight.highlightCallback
   -- osc.setInterval(fpsToMs)
 
   playstate.launch()
   -- playstate.handleMessageCallback = highlight.highlightCallback
-  playstate.setInterval(fpsToMs)
+  --playstate.setInterval(fpsToMs)
 end
 
 function EventHighlights.stop()
   -- osc:clearInterval()
-  playstate:clearInterval()
+  --playstate:clearInterval()
 end
 
 return EventHighlights

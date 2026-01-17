@@ -79,3 +79,40 @@ local a = 1
 local b = 1.234
 
 print(tostring(a < b))
+
+local a = 61.933333
+local b = 61.933334
+
+local epsilon = 1e-5 -- tolerance
+
+if math.abs(a - b) < epsilon then
+  print("Values are equal")
+else
+  print("Values are different")
+end
+
+local epsilon = 1e-5 -- tolerance
+
+local start = 61.933333
+local sam   = 61.93333
+
+if (start == sam) then
+ print ("Equal")
+else
+print ("Not equal")
+end
+
+local function round(x, decimals)
+    local p = 10 ^ decimals
+    return math.floor(x * p + 0.5) / p
+end
+
+
+local sam = 61.933334
+
+print (tostring(round(sam, 6)))
+
+
+        if tidalEvent.whole.stop < sam then
+
+        if tidalEvent.whole.start <= sam and tidalEvent.whole.stop >= sam then
