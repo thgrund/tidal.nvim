@@ -46,53 +46,19 @@ local function diff(sam, prevActive, current)
   local add = {}
   local active = {}
 
-  --print(string.format("SAM: %f ", sam))
-  -- for _, tidalEvent in pairs(current) do
-  --   if tidalEvent.whole ~= nil then
-  --     print(string.format("Whole start: %f ; stop: %f", tidalEvent.whole.start, tidalEvent.whole.stop))
-  --   end
-  -- end
-
   if sam ~= nil then
     for key, tidalEvent in pairs(current) do
       if tidalEvent ~= nil and tidalEvent.whole ~= nil then
-        if tidalEvent.whole.stop < sam then
-          -- print(
-          --   string.format(
-          --     "Remove Key: %s ; SAM: %f ;Whole start: %f ; stop: %f",
-          --     key,
-          --     sam,
-          --     tidalEvent.whole.start,
-          --     tidalEvent.whole.stop
-          --   )
-          -- )
+        if tidalEvent.whole.stop <= sam then
           table.insert(remove, key)
         end
 
         if tidalEvent.whole.start <= sam and tidalEvent.whole.stop >= sam then
           if prevActive[key] == nil then
-            -- print(
-            --   string.format(
-            --     "Add Key: %s ; SAM: %f ;Whole start: %f ; stop: %f",
-            --     key,
-            --     sam,
-            --     tidalEvent.whole.start,
-            --     tidalEvent.whole.stop
-            --   )
-            -- )
             table.insert(add, key)
           end
 
           if prevActive[key] ~= nil then
-            -- print(
-            --   string.format(
-            --     "Active Key: %s ; SAM: %f ;Whole start: %f ; stop: %f",
-            --     key,
-            --     sam,
-            --     tidalEvent.whole.start,
-            --     tidalEvent.whole.stop
-            --   )
-            -- )
             table.insert(active, key)
           end
         end
@@ -145,16 +111,8 @@ end
 
 function PlayStateProcessor.handleEvents()
   local events = diff(PlayStateProcessor.sam, activeEvents, currentPlayState)
+  local activeMessages = {}
 
-  --  print(
-  --    string.format(
-  --      "Remove %s Add %s Active %s",
-  --      table.concat(events.remove, ", "),
-  --      table.concat(events.add, ", "),
-  --      table.concat(events.active, ", ")
-  --    )
-  --  )
-  --
   for _, id in ipairs(events.add) do
     local extmark = getExtMark(id)
 
@@ -162,7 +120,7 @@ function PlayStateProcessor.handleEvents()
 
     if extmark ~= nil then
       highlight.addHighlight(extmark.id, extmark.buf, extmark.markerId)
-      -- table.insert(activeMessages, extmark)
+      table.insert(activeMessages, extmark)
     end
   end
 
@@ -170,17 +128,20 @@ function PlayStateProcessor.handleEvents()
     local removeCandidate = activeEvents[id]
     local shallBeRemoved = true
 
-    for _, event in pairs(activeEvents) do
-      if
-        event ~= nil
-        and event.whole ~= nil
-        and removeCandidate ~= nil
-        and removeCandidate.whole ~= nil
-        and event.colStart == removeCandidate.colStart
-        and event.eventId == removeCandidate.eventId
-        and event.whole.stop > removeCandidate.whole.stop
-      then
-        shallBeRemoved = false
+    if removeCandidate == nil then
+      shallBeRemoved = false
+    else
+      for _, event in pairs(activeEvents) do
+        if
+          event ~= nil
+          and event.whole ~= nil
+          and removeCandidate.whole ~= nil
+          and event.colStart == removeCandidate.colStart
+          and event.eventId == removeCandidate.eventId
+          and event.whole.stop > removeCandidate.whole.stop
+        then
+          shallBeRemoved = false
+        end
       end
     end
 
@@ -196,17 +157,17 @@ function PlayStateProcessor.handleEvents()
     currentPlayState[id] = nil
   end
 
-  -- for _, id in ipairs(events.active) do
-  --   local extmark = getExtMark(id)
+  for _, id in ipairs(events.active) do
+    local extmark = getExtMark(id)
 
-  --   if extmark ~= nil then
-  --     table.insert(activeMessages, extmark)
-  --   end
-  -- end
+    if extmark ~= nil then
+      table.insert(activeMessages, extmark)
+    end
+  end
 
-  -- if handleMessageCallback then
-  --   handleMessageCallback(activeMessages)
-  -- end
+  if handleMessageCallback then
+    handleMessageCallback(activeMessages)
+  end
 end
 
 --- Parses and maps a list of tidal event state strings like
