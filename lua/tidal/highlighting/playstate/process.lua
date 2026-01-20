@@ -47,6 +47,11 @@ local function diff(sam, prevActive, current)
   local active = {}
 
   if sam ~= nil then
+    for key, _ in pairs(prevActive) do
+      if current[key] == nil then
+        table.insert(remove, key)
+      end
+    end
     for key, tidalEvent in pairs(current) do
       if tidalEvent ~= nil and tidalEvent.whole ~= nil then
         if tidalEvent.whole.stop <= sam then
@@ -73,17 +78,19 @@ local function diff(sam, prevActive, current)
   }
 end
 
----@param id integer
+---@param id string
 ---@return TidalExtMark?
 local function getExtMark(id)
   local extmark
 
-  local eventId = currentPlayState[id].eventId
-  local colStart = currentPlayState[id].colStart
+  if currentPlayState[id] ~= nil then
+    local eventId = currentPlayState[id].eventId
+    local colStart = currentPlayState[id].colStart
 
-  if marker.extMarks[eventId] and marker.extMarks[eventId][colStart] then
-    extmark = marker.extMarks[eventId][colStart]
-    extmark.id = currentPlayState[id].id
+    if marker.extMarks[eventId] and marker.extMarks[eventId][colStart] then
+      extmark = marker.extMarks[eventId][colStart]
+      extmark.id = currentPlayState[id].id
+    end
   end
 
   return extmark
@@ -111,6 +118,7 @@ end
 
 function PlayStateProcessor.handleEvents()
   local events = diff(PlayStateProcessor.sam, activeEvents, currentPlayState)
+
   local activeMessages = {}
 
   for _, id in ipairs(events.add) do
@@ -225,11 +233,19 @@ function PlayStateProcessor.init()
 
   if sam ~= nil and next(currentPlayState) == nil then
     local intSam = math.floor(sam)
-    PlayStateProcessor.getPlayState(intSam, intSam + 4, LOCK_INIT_PLAYSTATE)
+    PlayStateProcessor.getPlayState(intSam, intSam + 5, LOCK_INIT_PLAYSTATE)
   end
 end
 
 function PlayStateProcessor.reset()
+  for id, _ in pairs(activeEvents) do
+    local extmark = getExtMark(id)
+
+    if extmark ~= nil then
+      highlight.removeHighlight(extmark.buf, extmark.markerId)
+    end
+  end
+
   currentPlayState = {}
   activeEvents = {}
 end
