@@ -20,7 +20,7 @@ PlayStateProcessor.interval = nil
 PlayStateProcessor._lastReceivedPlayState = nil
 PlayStateProcessor._currentPlayState = {}
 
-local handleMessageCallback = nil
+PlayStateProcessor.handleMessageCallback = nil
 
 local function removeFirstAndLast(t)
   if not t or type(t) ~= "table" or #t < 2 then
@@ -173,8 +173,8 @@ function PlayStateProcessor.handleEvents()
     end
   end
 
-  if handleMessageCallback then
-    handleMessageCallback(activeMessages)
+  if PlayStateProcessor.handleMessageCallback then
+    PlayStateProcessor.handleMessageCallback(activeMessages)
   end
 end
 

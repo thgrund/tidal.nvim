@@ -13,10 +13,11 @@ local state = require("tidal.core.state")
 ---@field start number
 ---@field stop number
 
-function PlayState.launch()
+function PlayState.launch(highlight)
   state.ghci.onDataProcessed = process.onDataProcessed
 
-  state.ghci.stdin:write([[clock "1*60"]])
+  process.handleMessageCallback = highlight.highlightCallback
+  --state.ghci.stdin:write([[clock "1*60"]])
 
   state.ghci.sendCallback = function()
     process.reset()
