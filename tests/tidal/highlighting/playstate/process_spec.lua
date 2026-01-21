@@ -9,13 +9,6 @@ describe("PlayState", function()
   local eq = assert.are.same
 
   before_each(function()
-    -- Stub vim.uv for timer testing (must be set up before any modules are loaded)
-    package.loaded["tidal.core.state"] = {
-      ghci = {
-        send = function() end,
-      },
-    }
-
     process = require("tidal.highlighting.playstate.process")
     parser = require("tidal.highlighting.playstate.parser")
 
@@ -308,9 +301,9 @@ describe("PlayState", function()
       eq(testme, expected)
     end)
 
-    it("bubu", function()
+    it("should handle same events over time correctly", function()
       local prevActive = {
-        ["2-8"] = {
+        ["past"] = {
           id = "1",
           eventId = 2,
           colStart = 8,
@@ -319,21 +312,10 @@ describe("PlayState", function()
             stop = 1,
           },
         },
-      }
-      local current = {
-        ["2-8"] = {
+        ["present"] = {
           id = "1",
           eventId = 2,
           colStart = 8,
-          whole = {
-            start = 0,
-            stop = 1,
-          },
-        },
-        ["2-30"] = {
-          id = "1",
-          eventId = 2,
-          colStart = 30,
           whole = {
             start = 1,
             stop = 2,
@@ -341,8 +323,38 @@ describe("PlayState", function()
         },
       }
 
+      local current = {
+        ["past"] = {
+          id = "1",
+          eventId = 2,
+          colStart = 8,
+          whole = {
+            start = 0,
+            stop = 1,
+          },
+        },
+        ["present"] = {
+          id = "1",
+          eventId = 2,
+          colStart = 8,
+          whole = {
+            start = 1,
+            stop = 2,
+          },
+        },
+        ["future"] = {
+          id = "1",
+          eventId = 2,
+          colStart = 8,
+          whole = {
+            start = 2,
+            stop = 3,
+          },
+        },
+      }
+
       local testme = process._diff(1.200000, prevActive, current)
-      local expected = { remove = {}, add = { "2-30" }, active = { "2-8" } }
+      local expected = { remove = { "past" }, add = {}, active = { "present" } }
 
       eq(testme, expected)
     end)

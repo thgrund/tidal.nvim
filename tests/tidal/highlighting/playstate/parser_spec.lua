@@ -226,7 +226,7 @@ describe("PlayStateParser", function()
 
   describe("parse", function()
     it("should map single event within one cycle", function()
-      local plain = '[((8,2),(18,2))](0>1)|_id_: "1",orbit: 0, s: "superpiano"'
+      local plain = '[((8,2),(18,2))]((0,0/1)<(1,0/1))|_id_: "1",orbit: 0, s: "superpiano"'
 
       playStateParser.genEventId = function()
         return "lp5tew5bP"
@@ -250,7 +250,8 @@ describe("PlayStateParser", function()
     end)
 
     it("should map multiple events within one cycle", function()
-      local plain = '[((8,2),(18,2)),((30,2),(31,2))](0>1)|_id_: "1", note: 0.0n (c5), orbit: 0, s: "superpiano"'
+      local plain =
+        '[((8,2),(18,2)),((30,2),(31,2))]((0,0/1)<(1,0/1))|_id_: "1", note: 0.0n (c5), orbit: 0, s: "superpiano"'
 
       local eventIds = { "XRKUfOvTA", "UIhicEQF1" }
 
@@ -286,7 +287,7 @@ describe("PlayStateParser", function()
       eq(passedIn, expected)
     end)
     it("should map event with past start and future stop correctly", function()
-      local plain = '[((8,2),(18,2)))]0-(1>2)-3|_id_: "1", orbit: 0, s: "superpiano"'
+      local plain = '[((8,2),(18,2)))](0,0/1)-((1,0/1)<(2,0/1))-(3,0/1)|_id_: "1", orbit: 0, s: "superpiano"'
 
       playStateParser.genEventId = function()
         return "lp5tew5bP"
@@ -310,7 +311,7 @@ describe("PlayStateParser", function()
     end)
 
     it("should map event with fractional at the end of current correctly", function()
-      local plain = '[((8,2),(18,2)))](⅞>15/16)|_id_: "1", orbit: 0, s: "superpiano"'
+      local plain = '[((8,2),(18,2)))]((0,7/8)<(0,15/16))|_id_: "1", orbit: 0, s: "superpiano"'
 
       playStateParser.genEventId = function()
         return "lp5tew5bP"
@@ -333,7 +334,7 @@ describe("PlayStateParser", function()
       eq(passedIn, expected)
     end)
     it("should map event with fractional at the start of current correctly", function()
-      local plain = '[((8,2),(18,2)))](15/16>1)|_id_: "1", orbit: 0, s: "superpiano"'
+      local plain = '[((8,2),(18,2)))]((0,15/16)<(1,0/1))|_id_: "1", orbit: 0, s: "superpiano"'
 
       playStateParser.genEventId = function()
         return "lp5tew5bP"
@@ -357,7 +358,7 @@ describe("PlayStateParser", function()
     end)
 
     it("should map event with past start correctly", function()
-      local plain = '[((8,2),(18,2)))]0-(2>2½)|_id_: "1", orbit: 0, s: "superpiano"'
+      local plain = '[((8,2),(18,2)))](0,0/1)-((2,0/1)<(2,1/2))|_id_: "1", orbit: 0, s: "superpiano"'
 
       playStateParser.genEventId = function()
         return "iZKbZdZMZ"
@@ -381,7 +382,7 @@ describe("PlayStateParser", function()
     end)
 
     it("should map event with future stop correctly", function()
-      local plain = '[((8,2),(18,2)))](2½>3)-5|_id_: "1", orbit: 0, s: "superpiano"'
+      local plain = '[((8,2),(18,2)))]((2,1/2)<(3,0/1))-(5,0/1)|_id_: "1", orbit: 0, s: "superpiano"'
 
       playStateParser.genEventId = function()
         return "Jhd8Rk8rv"
