@@ -17,11 +17,10 @@ function PlayState.launch(highlight)
   state.ghci.onDataProcessed = process.onDataProcessed
 
   process.handleMessageCallback = highlight.highlightCallback
-  --state.ghci.stdin:write([[clock "1*60"]])
 
   state.ghci.sendCallback = function()
     process.reset()
-    process.init()
+    state.ghci.stdin:write(string.format('\n:{\nclock "1*%s"\n:}\n', highlight.fps))
   end
 end
 

@@ -168,7 +168,6 @@ function Repl:send(text, start, lockName)
   local isLocked = false
   local lockStart
   local lockEnd
-  local wasHushed = false
 
   if lockName ~= 0 and lockName ~= nil then
     isLocked = true

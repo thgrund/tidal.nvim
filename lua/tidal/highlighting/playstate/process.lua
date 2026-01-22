@@ -248,6 +248,7 @@ function PlayStateProcessor.reset()
 
   currentPlayState = {}
   activeEvents = {}
+  PlayStateProcessor.sam = nil
 end
 
 ---Requests the playstate from TidalCycles

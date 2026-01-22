@@ -25,6 +25,7 @@ local defaults = {
       file = vim.api.nvim_get_runtime_file("bootfiles/BootTidal.hs", false)[1],
       enabled = true,
       highlight = {
+        type = "playstate",
         autostart = false,
         styles = {
           osc = {
@@ -40,7 +41,7 @@ local defaults = {
             port = 6013,
           },
         },
-        fps = 30,
+        fps = 60,
         highlightCallback = function() end,
       },
     },
