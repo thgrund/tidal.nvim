@@ -1,5 +1,6 @@
 --- @diagnostic disable: undefined-field
 local playstate = require("tidal.highlighting.playstate")
+local state = require("tidal.core.state")
 
 local eq = assert.are.same
 
@@ -25,20 +26,24 @@ describe("PlayState", function()
 
     -- Reload the playstate module with the mocked state
     playstate = require("tidal.highlighting.playstate")
+    state = require("tidal.core.state")
   end)
 
   describe("launch", function()
     it("sends the clock to stdin with the correct fps that was passed", function()
       local actual
-      local expected = [[clock "1*60"]]
-
+      -- Generate the expected value using the same format as the implementation
+      local expected = string.format('\n:{\nclock "1*%s"\n:}\n', 60)
       -- Override the write function to capture the value
       package.loaded["tidal.core.state"].ghci.stdin.write = function(_, val)
         actual = val
         return val -- Return the value to match the original behavior
       end
+      package.loaded["tidal.highlighting.playstate.process"].reset = function() end
 
-      playstate.launch({ highlightCallback = function() end, fps = 60 })
+      playstate.launch({ highlightCallback = function() end, fps = 60, type = "playstate" })
+      state.ghci.sendCallback()
+
       eq(expected, actual)
     end)
   end)
