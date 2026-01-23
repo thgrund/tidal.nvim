@@ -1,6 +1,7 @@
 :set -fno-warn-orphans -Wno-type-defaults -XMultiParamTypeClasses -XOverloadedStrings
 :set prompt ""
 :set -package tidal
+:set -package tidal-core
 
 -- Import all the boot functions and aliases.
 import Sound.Tidal.Boot
