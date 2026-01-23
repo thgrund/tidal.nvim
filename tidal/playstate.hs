@@ -1,3 +1,4 @@
+:set -package tidal-core
 
 import Sound.Tidal.Pattern 
 import Sound.Tidal.Params (pR) 
