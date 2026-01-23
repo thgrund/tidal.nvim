@@ -47,9 +47,11 @@ local function diff(sam, prevActive, current)
   local active = {}
 
   if sam ~= nil then
-    for key, _ in pairs(prevActive) do
-      if current[key] == nil then
-        table.insert(remove, key)
+    if next(current) ~= nil then
+      for key, _ in pairs(prevActive) do
+        if current[key] == nil then
+          table.insert(remove, key)
+        end
       end
     end
     for key, tidalEvent in pairs(current) do
@@ -78,22 +80,55 @@ local function diff(sam, prevActive, current)
   }
 end
 
+--- @param active table<string, TidalEvent>
+--- @param current table<string, TidalEvent>
+local function updateActive(active, current)
+  local removable = {}
+  local keepable = {}
+
+  for activeId, activeEvent in pairs(active) do
+    local wasFound = false
+
+    for currentId, currentEvent in pairs(current) do
+      if vim.deep_equal(activeEvent, currentEvent) then
+        keepable[currentId] = activeEvent
+        wasFound = true
+      end
+    end
+
+    if wasFound == false then
+      removable[activeId] = activeEvent
+    end
+  end
+  return { removable = removable, active = keepable }
+end
+
 ---@param id string
 ---@return TidalExtMark?
-local function getExtMark(id)
+local function getExtMark(id, playState)
   local extmark
 
-  if currentPlayState[id] ~= nil then
-    local eventId = currentPlayState[id].eventId
-    local colStart = currentPlayState[id].colStart
+  if playState[id] ~= nil then
+    local eventId = playState[id].eventId
+    local colStart = playState[id].colStart
 
     if marker.extMarks[eventId] and marker.extMarks[eventId][colStart] then
       extmark = marker.extMarks[eventId][colStart]
-      extmark.id = currentPlayState[id].id
+      extmark.id = playState[id].id
     end
   end
 
   return extmark
+end
+
+local function cleanHighlights(removableEvents)
+  for id, _ in pairs(removableEvents) do
+    local extmark = getExtMark(id, removableEvents)
+
+    if extmark ~= nil then
+      highlight.removeHighlight(extmark.buf, extmark.markerId)
+    end
+  end
 end
 
 function PlayStateProcessor.setSam(sam)
@@ -122,7 +157,7 @@ function PlayStateProcessor.handleEvents()
   local activeMessages = {}
 
   for _, id in ipairs(events.add) do
-    local extmark = getExtMark(id)
+    local extmark = getExtMark(id, currentPlayState)
 
     activeEvents[id] = currentPlayState[id]
 
@@ -154,7 +189,7 @@ function PlayStateProcessor.handleEvents()
     end
 
     if shallBeRemoved then
-      local extmark = getExtMark(id)
+      local extmark = getExtMark(id, currentPlayState)
 
       if extmark ~= nil then
         highlight.removeHighlight(extmark.buf, extmark.markerId)
@@ -166,7 +201,7 @@ function PlayStateProcessor.handleEvents()
   end
 
   for _, id in ipairs(events.active) do
-    local extmark = getExtMark(id)
+    local extmark = getExtMark(id, currentPlayState)
 
     if extmark ~= nil then
       table.insert(activeMessages, extmark)
@@ -221,6 +256,12 @@ function PlayStateProcessor.onDataProcessed(output)
 
       currentPlayState = parsedOutput
 
+      local updatedEvents = updateActive(activeEvents, currentPlayState)
+
+      cleanHighlights(updatedEvents.removable)
+
+      activeEvents = updatedEvents.active
+
       PlayStateProcessor._currentPlayState = currentPlayState
 
       return
@@ -238,16 +279,8 @@ function PlayStateProcessor.init()
 end
 
 function PlayStateProcessor.reset()
-  for id, _ in pairs(activeEvents) do
-    local extmark = getExtMark(id)
-
-    if extmark ~= nil then
-      highlight.removeHighlight(extmark.buf, extmark.markerId)
-    end
-  end
-
   currentPlayState = {}
-  activeEvents = {}
+  -- activeEvents = {}
   PlayStateProcessor.sam = nil
 end
 
@@ -262,5 +295,5 @@ function PlayStateProcessor.getPlayState(start, stop, lock)
 end
 
 PlayStateProcessor._diff = diff
-
+PlayStateProcessor._updateActive = updateActive
 return PlayStateProcessor

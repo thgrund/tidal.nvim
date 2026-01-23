@@ -358,5 +358,123 @@ describe("PlayState", function()
 
       eq(testme, expected)
     end)
+    it("should keep active events, when current is empty", function()
+      local prevActive = {
+        ["past"] = {
+          id = "1",
+          eventId = 2,
+          colStart = 8,
+          whole = {
+            start = 0,
+            stop = 1,
+          },
+        },
+        ["present"] = {
+          id = "1",
+          eventId = 2,
+          colStart = 8,
+          whole = {
+            start = 1,
+            stop = 2,
+          },
+        },
+      }
+
+      local current = {}
+
+      local testme = process._diff(1.200000, prevActive, current)
+      local expected = { remove = {}, add = {}, active = {} }
+
+      eq(testme, expected)
+    end)
+  end)
+
+  describe("updateActives", function()
+    it("should update the active id, when current has the same event with a different id", function()
+      local active = {
+        ["old"] = {
+          id = "1",
+          eventId = 2,
+          colStart = 8,
+          whole = {
+            start = 0,
+            stop = 1,
+          },
+        },
+      }
+      local current = {
+        ["new"] = {
+          id = "1",
+          eventId = 2,
+          colStart = 8,
+          whole = {
+            start = 0,
+            stop = 1,
+          },
+        },
+      }
+
+      local testme = process._updateActive(active, current)
+      local expected = { active = current, removable = {} }
+
+      eq(testme, expected)
+    end)
+    it("should marke the active id as removable, when current hasn't the same event with a different id", function()
+      local active = {
+        ["old"] = {
+          id = "1",
+          eventId = 2,
+          colStart = 8,
+          whole = {
+            start = 0,
+            stop = 1,
+          },
+        },
+      }
+      local current = {
+        ["new"] = {
+          id = "1",
+          eventId = 2,
+          colStart = 8,
+          whole = {
+            start = 1,
+            stop = 2,
+          },
+        },
+      }
+
+      local testme = process._updateActive(active, current)
+      local expected = { active = {}, removable = active }
+
+      eq(testme, expected)
+    end)
+    it("should keep the active empty, regardless what is in current", function()
+      local active = {}
+      local current = {
+        ["event1"] = {
+          id = "1",
+          eventId = 2,
+          colStart = 8,
+          whole = {
+            start = 0,
+            stop = 1,
+          },
+        },
+        ["event2"] = {
+          id = "1",
+          eventId = 2,
+          colStart = 8,
+          whole = {
+            start = 1,
+            stop = 2,
+          },
+        },
+      }
+
+      local testme = process._updateActive(active, current)
+      local expected = { removable = {}, active = {} }
+
+      eq(testme, expected)
+    end)
   end)
 end)
