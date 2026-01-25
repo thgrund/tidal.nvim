@@ -85,21 +85,47 @@ end
 local function updateActive(active, current)
   local removable = {}
   local keepable = {}
+  local currentLookup = {}
 
-  for activeId, activeEvent in pairs(active) do
-    local wasFound = false
-
-    for currentId, currentEvent in pairs(current) do
-      if vim.deep_equal(activeEvent, currentEvent) then
-        keepable[currentId] = activeEvent
-        wasFound = true
-      end
+  -- Build a lookup table for current events using a composite key
+  -- This reduces complexity from O(n²) to O(n + m)
+  for currentId, currentEvent in pairs(current) do
+    if currentEvent and currentEvent.whole then
+      local key = string.format(
+        "%d_%d_%.6f_%.6f_%s",
+        currentEvent.eventId,
+        currentEvent.colStart,
+        currentEvent.whole.start,
+        currentEvent.whole.stop,
+        currentEvent.id or ""
+      )
+      currentLookup[key] = { id = currentId, event = currentEvent }
     end
+  end
 
-    if wasFound == false then
+  -- Check each active event against the lookup table
+  for activeId, activeEvent in pairs(active) do
+    if activeEvent and activeEvent.whole then
+      local key = string.format(
+        "%d_%d_%.6f_%.6f_%s",
+        activeEvent.eventId,
+        activeEvent.colStart,
+        activeEvent.whole.start,
+        activeEvent.whole.stop,
+        activeEvent.id or ""
+      )
+
+      local found = currentLookup[key]
+      if found then
+        keepable[found.id] = found.event
+      else
+        removable[activeId] = activeEvent
+      end
+    else
       removable[activeId] = activeEvent
     end
   end
+
   return { removable = removable, active = keepable }
 end
 
@@ -237,7 +263,10 @@ function PlayStateProcessor.onDataProcessed(output)
 
       PlayStateProcessor._lastReceivedPlayState = output
 
+      -- local initNow = vim.loop.hrtime() / 1e6
       local parsedOutput = PlayStateProcessor.parse(output)
+      --  local delta = (vim.loop.hrtime() / 1e6) - initNow
+      --  print("EXTEND DELTA: " .. tostring(delta))
 
       for key, parsed in pairs(parsedOutput) do
         currentPlayState[key] = parsed
@@ -249,21 +278,35 @@ function PlayStateProcessor.onDataProcessed(output)
     end
 
     if startsWith(output[1], LOCK_INIT_PLAYSTATE) then
+      local initNow = vim.loop.hrtime() / 1e6
       output = removeFirstAndLast(output)
+      local delta = (vim.loop.hrtime() / 1e6) - initNow
+      print("removeFirstAndLast: " .. tostring(delta))
 
       PlayStateProcessor._lastReceivedPlayState = output
+
+      local initNow2 = vim.loop.hrtime() / 1e6
       local parsedOutput = PlayStateProcessor.parse(output)
+      local delta2 = (vim.loop.hrtime() / 1e6) - initNow2
+      print("parse: " .. tostring(delta2))
 
       currentPlayState = parsedOutput
 
+      local initNow3 = vim.loop.hrtime() / 1e6
       local updatedEvents = updateActive(activeEvents, currentPlayState)
+      local delta3 = (vim.loop.hrtime() / 1e6) - initNow3
+      print("updateActive: " .. tostring(delta3))
 
+      local initNow4 = vim.loop.hrtime() / 1e6
       cleanHighlights(updatedEvents.removable)
+      local delta4 = (vim.loop.hrtime() / 1e6) - initNow4
+      print("cleanHighlights: " .. tostring(delta4))
 
       activeEvents = updatedEvents.active
 
       PlayStateProcessor._currentPlayState = currentPlayState
 
+      print("\n")
       return
     end
   end
@@ -288,7 +331,6 @@ end
 ---@param start integer
 ---@param stop integer
 function PlayStateProcessor.getPlayState(start, stop, lock)
-  -- print(string.format("sam %f start %f stop %f", PlayStateProcessor.sam, start, stop))
   if start and stop then
     state.ghci:send("streamActivePt tidal (Arc " .. start .. " " .. stop .. ")", nil, lock)
   end
