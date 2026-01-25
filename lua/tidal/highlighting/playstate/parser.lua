@@ -56,40 +56,6 @@ function M.extract(input)
   }
 end
 
-local fractionToDecimal = {
-  ["½"] = 0.5,
-  ["⅓"] = 0.333,
-  ["⅔"] = 0.666,
-  ["¼"] = 0.25,
-  ["¾"] = 0.75,
-  ["⅕"] = 0.2,
-  ["⅖"] = 0.4,
-  ["⅗"] = 0.6,
-  ["⅘"] = 0.8,
-  ["⅙"] = 0.166,
-  ["⅚"] = 0.833,
-  ["⅐"] = 0.142,
-  ["⅛"] = 0.125,
-  ["⅜"] = 0.375,
-  ["⅝"] = 0.625,
-  ["⅞"] = 0.875,
-  ["⅑"] = 0.111,
-  ["⅒"] = 0.1,
-}
-
-local function replaceFractions(str)
-  for unicode, decimal in pairs(fractionToDecimal) do
-    str = str:gsub(unicode, tostring(decimal))
-  end
-
-  -- Handle fractions with "/" like "15/16"
-  str = str:gsub("(%d+)/(%d+)", function(numerator, denominator)
-    return tostring(tonumber(numerator) / tonumber(denominator))
-  end)
-
-  return str:gsub("0%.", ".")
-end
-
 local function tupleToNumber(tuple)
   -- remove surrounding parentheses
   local inner = tuple:sub(2, -2)
@@ -172,7 +138,5 @@ function M.parse(line)
 
   return result
 end
-
-M._replaceFractions = replaceFractions
 
 return M
