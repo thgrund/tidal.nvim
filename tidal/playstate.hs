@@ -18,19 +18,25 @@ prettyRat' r
     frac = r - toRational unit
 
 showEvent' (Event _ (Just (Arc ws we)) a@(Arc ps pe) e) =
-  (h ++ "(" ++ prettyRat' ps ++ "<" ++ prettyRat' pe ++ ")" ++ t ++ "|", show e)
-  where
-    h
-      | ws == ps = ""
-      | otherwise = prettyRat' ws ++ "-"
-    t
-      | we == pe = ""
-      | otherwise = "-" ++ prettyRat' we
+  (h ++ "(" ++ prettyRat' ps ++ "<" ++ prettyRat' pe ++ ")" ++ t ++ "|", showIdOnly e)
+    where
+        h
+          | ws == ps = ""
+          | otherwise = prettyRat' ws ++ "-"
+        t
+          | we == pe = ""
+          | otherwise = "-" ++ prettyRat' we
+        showIdOnly eventMap = case Data.Map.lookup "_id_" eventMap of
+          Just (VS idVal) -> "_id_: " ++ idVal
+          _ -> "_id_: not found"
 showEvent' (Event _ Nothing a e) =
-  ("~" ++ show a ++ "~|", show e)
+  ("~" ++ show a ++ "~|", showIdOnly e)
+  where
+    showIdOnly eventMap = case Data.Map.lookup "_id_" eventMap of
+      Just (VS idVal) -> "_id_: " ++ idVal
+      _ -> "_id_: not found"
 
 -- Show context of an event
-showEventAll' :: (Show a) => Event a -> String
 showEventAll' e = show (context e) ++ uncurry (++) (showEvent' e)
 
 -- Show everything, including event context
