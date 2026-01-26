@@ -258,7 +258,6 @@ end
 
 function PlayStateProcessor.onDataProcessed(output)
   if #output > 2 then
-    local initNow = vim.loop.hrtime() / 1e6
     if startsWith(output[1], LOCK_EXTEND_PLAYSTATE) then
       output = removeFirstAndLast(output)
 
@@ -271,10 +270,6 @@ function PlayStateProcessor.onDataProcessed(output)
       end
 
       PlayStateProcessor._currentPlayState = currentPlayState
-
-      local delta = (vim.loop.hrtime() / 1e6) - initNow
-      print(tostring(delta))
-      print("\n")
 
       return
     end
@@ -298,41 +293,6 @@ function PlayStateProcessor.onDataProcessed(output)
 
       return
     end
-    -- if startsWith(output[1], LOCK_INIT_PLAYSTATE) then
-    --   local initNow = vim.loop.hrtime() / 1e6
-    --   output = removeFirstAndLast(output)
-    --   local delta = (vim.loop.hrtime() / 1e6) - initNow
-    --   print("#output", #output)
-    --   print("removeFirstAndLast: " .. tostring(delta))
-
-    --   print("Number of lines to parse: " .. #output)
-
-    --   PlayStateProcessor._lastReceivedPlayState = output
-
-    --   local initNow2 = vim.loop.hrtime() / 1e6
-    --   local parsedOutput = PlayStateProcessor.parse(output)
-    --   local delta2 = (vim.loop.hrtime() / 1e6) - initNow2
-    --   print("parse: " .. tostring(delta2))
-
-    --   currentPlayState = parsedOutput
-
-    --   local initNow3 = vim.loop.hrtime() / 1e6
-    --   local updatedEvents = updateActive(activeEvents, currentPlayState)
-    --   local delta3 = (vim.loop.hrtime() / 1e6) - initNow3
-    --   print("updateActive: " .. tostring(delta3))
-
-    --   local initNow4 = vim.loop.hrtime() / 1e6
-    --   cleanHighlights(updatedEvents.removable)
-    --   local delta4 = (vim.loop.hrtime() / 1e6) - initNow4
-    --   print("cleanHighlights: " .. tostring(delta4))
-
-    --   activeEvents = updatedEvents.active
-
-    --   PlayStateProcessor._currentPlayState = currentPlayState
-
-    --   print("\n")
-    --   return
-    -- end
   end
 end
 
