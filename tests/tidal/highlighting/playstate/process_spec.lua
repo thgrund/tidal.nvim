@@ -5,12 +5,14 @@ local orig_schedule
 describe("PlayState", function()
   local process
   local parser
+  local marker
 
   local eq = assert.are.same
 
   before_each(function()
     process = require("tidal.highlighting.playstate.process")
     parser = require("tidal.highlighting.playstate.parser")
+    marker = require("tidal.highlighting.marker")
 
     process._currentPlayState = {}
     process._lastReceivedPlayState = {}
@@ -475,6 +477,34 @@ describe("PlayState", function()
       local expected = { removable = {}, active = {} }
 
       eq(testme, expected)
+    end)
+  end)
+
+  describe("currentToJSON", function()
+    it("should transform playstate correctly with extmark enrichment", function()
+      local state = {
+        "INIT_PLAYSTATE_START",
+        '[((8,2),(18,2)),((30,2),(31,2))]((0,0/1)<(1,0/1))|_id_: "1", note: 0.0n (c5), orbit: 0, s: "superpiano"',
+        "INIT_PLAYSTATE_END",
+      }
+      marker.extMarks[1] = {}
+
+      marker.extMarks[1][9] = {
+        functionName = "s",
+        originalText = "superpiano",
+      }
+      marker.extMarks[1][31] = {
+        functionName = "note",
+        originalText = "0.0",
+      }
+
+      process.onDataProcessed(state)
+
+      local expected =
+        '{"5": {"colStart": 9,"eventId": 1,"fun": "s","id": "1","val": "superpiano","whole": {"start": 0,"stop": 1}},"6": {"colStart": 31,"eventId": 1,"fun": "note","id": "1","val": "0.0","whole": {"start": 0,"stop": 1}}}'
+      local testme = process.currentToJSON()
+
+      eq(expected, testme)
     end)
   end)
 end)

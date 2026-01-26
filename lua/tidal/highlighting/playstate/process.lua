@@ -249,6 +249,17 @@ function PlayStateProcessor.parse(list)
 
   for _, raw in ipairs(list) do
     for key, parsed in pairs(playStateParser.parse(raw)) do
+      -- Enricht parsed result with extmark data
+      local extmark
+      local eventId = parsed.eventId
+      local colStart = parsed.colStart
+
+      if marker.extMarks[eventId] and marker.extMarks[eventId][colStart] then
+        extmark = marker.extMarks[eventId][colStart]
+        parsed.fun = extmark.functionName
+        parsed.val = extmark.originalText
+      end
+
       result[key] = parsed
     end
   end
@@ -317,6 +328,11 @@ function PlayStateProcessor.getPlayState(start, stop, lock)
   if start and stop then
     state.ghci:send("streamActivePt tidal (Arc " .. start .. " " .. stop .. ")", nil, lock)
   end
+end
+
+function PlayStateProcessor.currentToJSON()
+  local luaString = vim.inspect(currentPlayState, { newline = "", indent = "" })
+  return luaString:gsub("%[(%d+)%]%s*=", '"%1":'):gsub("(%w+)%s*=", '"%1":')
 end
 
 PlayStateProcessor._diff = diff

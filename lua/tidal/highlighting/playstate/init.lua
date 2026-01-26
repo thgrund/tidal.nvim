@@ -8,6 +8,8 @@ local state = require("tidal.core.state")
 ---@field eventId integer
 ---@field colStart integer
 ---@field whole TidalWhole
+---@field fun string
+---@field val string
 ---
 ---@class TidalWhole
 ---@field start number
