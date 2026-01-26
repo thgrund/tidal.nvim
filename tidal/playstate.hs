@@ -17,6 +17,13 @@ prettyRat' r
     unit = floor r :: Int
     frac = r - toRational unit
 
+
+hasClockId :: Event ValueMap -> Bool
+hasClockId (Event _ _ _ eventMap) =
+  case Data.Map.lookup "_id_" eventMap of
+    Just (VS "clock") -> True
+    _                 -> False
+
 showEvent' (Event _ (Just (Arc ws we)) a@(Arc ps pe) e) =
   (h ++ "(" ++ prettyRat' ps ++ "<" ++ prettyRat' pe ++ ")" ++ t ++ "|", showIdOnly e)
     where
@@ -41,7 +48,7 @@ showEventAll' e = show (context e) ++ uncurry (++) (showEvent' e)
 
 -- Show everything, including event context
 showAll' :: [Event ValueMap] -> String
-showAll' e = intercalate "\n" $ map showEventAll' $ sortOn part $ e 
+showAll' e = intercalate "\n" $ map showEventAll' $ sortOn part $ filter (not . hasClockId) e 
 
 streamActivePt s arc = do
   pMap <- readMVar (sPMapMV s)
