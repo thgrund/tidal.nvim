@@ -24,6 +24,11 @@ hasClockId (Event _ _ _ eventMap) =
     Just (VS "clock") -> True
     _                 -> False
 
+
+showIdOnly eventMap = case Data.Map.lookup "_id_" eventMap of
+  Just (VS idVal) -> "_id_: " ++ idVal
+  _ -> "_id_: not found"
+
 showEvent' (Event _ (Just (Arc ws we)) a@(Arc ps pe) e) =
   (h ++ "(" ++ prettyRat' ps ++ "<" ++ prettyRat' pe ++ ")" ++ t ++ "|", showIdOnly e)
     where
@@ -33,15 +38,9 @@ showEvent' (Event _ (Just (Arc ws we)) a@(Arc ps pe) e) =
         t
           | we == pe = ""
           | otherwise = "-" ++ prettyRat' we
-        showIdOnly eventMap = case Data.Map.lookup "_id_" eventMap of
-          Just (VS idVal) -> "_id_: " ++ idVal
-          _ -> "_id_: not found"
 showEvent' (Event _ Nothing a e) =
   ("~" ++ show a ++ "~|", showIdOnly e)
   where
-    showIdOnly eventMap = case Data.Map.lookup "_id_" eventMap of
-      Just (VS idVal) -> "_id_: " ++ idVal
-      _ -> "_id_: not found"
 
 -- Show context of an event
 showEventAll' e = show (context e) ++ uncurry (++) (showEvent' e)
