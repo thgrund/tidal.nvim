@@ -1,59 +1,20 @@
 local M = {}
 
+---@param input string
+---@return string[] # {col, whole, id}
 function M.extract(input)
-  local col = {}
-  local whole = {}
-  local id = {}
-
-  local i = 1
-
-  while i <= #input do
-    local ch = string.sub(input, i, i)
-
-    -- parse col: [((8,2),(18,2)))]
-    if ch == "[" then
-      table.insert(col, ch)
-      i = i + 1
-      repeat
-        ch = string.sub(input, i, i)
-        table.insert(col, ch)
-        i = i + 1
-      until ch == "]"
-
-      -- parse whole: everything until '|'
-      while i <= #input do
-        ch = string.sub(input, i, i)
-        if ch == "|" then
-          break
-        end
-        table.insert(whole, ch)
-        i = i + 1
-      end
-
-    -- parse id: after '_id_: "' until closing quote
-    elseif string.sub(input, i, i + 4) == "_id_:" then
-      -- skip to the first quote
-      i = i + 6
-      while string.sub(input, i, i) ~= '"' do
-        i = i + 1
-      end
-      i = i + 1 -- skip opening quote
-      repeat
-        ch = string.sub(input, i, i)
-        table.insert(id, ch)
-        i = i + 1
-      until ch == '"'
-      table.remove(id, #id) -- remove the closing quote
-    else
-      i = i + 1
-    end
+  local col = input:match("^(%b[])")
+  if not col then
+    return { "", "", "" }
   end
 
-  return {
-    table.concat(col),
-    table.concat(whole),
-    table.concat(id),
-  }
+  local after_col = input:sub(#col + 1)
+  local whole = after_col:match("^(.-)|")
+  whole = whole or ""
+
+  local id = input:match('_id_:%s*"([^"]+)"') or ""
+
+  return { col, whole, id }
 end
 
 local function tupleToNumber(tuple)
@@ -79,28 +40,32 @@ function M.mapWhole(plain)
     return nil
   end
 
-  local tuples = {}
+  local first, last
 
   for tuple in plain:gmatch("%(%s*-?%d+%s*,%s*%d+/%d+%s*%)") do
-    table.insert(tuples, tuple)
+    if not first then
+      first = tuple
+    end
+    last = tuple
   end
 
-  if #tuples < 2 then
+  if not first or not last then
     return nil
   end
 
   return {
-    start = tupleToNumber(tuples[1]),
-    stop = tupleToNumber(tuples[#tuples]),
+    start = tupleToNumber(first),
+    stop = tupleToNumber(last),
   }
 end
 
 function M.mapPos(str)
   local result = {}
+  local n = 0
 
-  -- match every (number,number) inside the string
   for x, y in str:gmatch("%((%d+),(%d+)%)") do
-    table.insert(result, { tonumber(x), tonumber(y) })
+    n = n + 1
+    result[n] = { tonumber(x), tonumber(y) }
   end
 
   return result
