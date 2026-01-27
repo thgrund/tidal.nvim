@@ -146,7 +146,8 @@ describe("Marker", function()
       eq(3, Marker.count())
 
       -- remove only line 2
-      Marker.cleanUpMarkers(2, 2)
+      Marker.setRemovables(2, 2)
+      Marker.cleanUpMarkers()
 
       eq(2, Marker.count())
       eq(2, Marker.countNsExtmarks())

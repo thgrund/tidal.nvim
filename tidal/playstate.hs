@@ -26,8 +26,8 @@ hasClockId (Event _ _ _ eventMap) =
 
 
 showIdOnly eventMap = case Data.Map.lookup "_id_" eventMap of
-  Just (VS idVal) -> "_id_: " ++ idVal
-  _ -> "_id_: not found"
+  Just (VS idVal) -> "_id_: \"" ++ idVal ++ "\""
+  _ -> "_id_: not found" 
 
 showEvent' (Event _ (Just (Arc ws we)) a@(Arc ps pe) e) =
   (h ++ "(" ++ prettyRat' ps ++ "<" ++ prettyRat' pe ++ ")" ++ t ++ "|", showIdOnly e)

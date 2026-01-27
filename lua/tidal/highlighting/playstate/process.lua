@@ -14,6 +14,7 @@ local currentPlayState = {}
 --- @type table<string, TidalEvent>
 local activeEvents = {}
 
+PlayStateProcessor.ws = nil
 PlayStateProcessor.timer = nil
 PlayStateProcessor.sam = 0
 PlayStateProcessor.interval = nil
@@ -182,17 +183,6 @@ function PlayStateProcessor.handleEvents()
 
   local activeMessages = {}
 
-  for _, id in ipairs(events.add) do
-    local extmark = getExtMark(id, currentPlayState)
-
-    activeEvents[id] = currentPlayState[id]
-
-    if extmark ~= nil then
-      highlight.addHighlight(extmark.id, extmark.buf, extmark.markerId)
-      table.insert(activeMessages, extmark)
-    end
-  end
-
   for _, id in ipairs(events.remove) do
     local removeCandidate = activeEvents[id]
     local shallBeRemoved = true
@@ -215,7 +205,7 @@ function PlayStateProcessor.handleEvents()
     end
 
     if shallBeRemoved then
-      local extmark = getExtMark(id, currentPlayState)
+      local extmark = getExtMark(id, activeEvents)
 
       if extmark ~= nil then
         highlight.removeHighlight(extmark.buf, extmark.markerId)
@@ -224,6 +214,17 @@ function PlayStateProcessor.handleEvents()
 
     activeEvents[id] = nil
     currentPlayState[id] = nil
+  end
+
+  for _, id in ipairs(events.add) do
+    local extmark = getExtMark(id, currentPlayState)
+
+    activeEvents[id] = currentPlayState[id]
+
+    if extmark ~= nil then
+      highlight.addHighlight(extmark.id, extmark.buf, extmark.markerId)
+      table.insert(activeMessages, extmark)
+    end
   end
 
   for _, id in ipairs(events.active) do
@@ -282,6 +283,14 @@ function PlayStateProcessor.onDataProcessed(output)
 
       PlayStateProcessor._currentPlayState = currentPlayState
 
+      if PlayStateProcessor.ws ~= nil then
+        local events = PlayStateProcessor.currentToJSON(parsedOutput)
+
+        for _, event in ipairs(events) do
+          PlayStateProcessor.ws:send(event)
+        end
+      end
+
       return
     end
 
@@ -295,12 +304,21 @@ function PlayStateProcessor.onDataProcessed(output)
       currentPlayState = parsedOutput
 
       local updatedEvents = updateActive(activeEvents, currentPlayState)
-
       cleanHighlights(updatedEvents.removable)
 
       activeEvents = updatedEvents.active
 
       PlayStateProcessor._currentPlayState = currentPlayState
+
+      if PlayStateProcessor.ws ~= nil then
+        local events = PlayStateProcessor.currentToJSON(currentPlayState)
+
+        for _, event in ipairs(events) do
+          PlayStateProcessor.ws:send(event)
+        end
+      end
+
+      marker.cleanUpMarkers()
 
       return
     end
@@ -330,9 +348,18 @@ function PlayStateProcessor.getPlayState(start, stop, lock)
   end
 end
 
-function PlayStateProcessor.currentToJSON()
-  local luaString = vim.inspect(currentPlayState, { newline = "", indent = "" })
-  return luaString:gsub("%[(%d+)%]%s*=", '"%1":'):gsub("(%w+)%s*=", '"%1":')
+function PlayStateProcessor.currentToJSON(playstate)
+  local events = {}
+
+  for _, event in pairs(playstate) do
+    -- if event.functionName == "n" or event.functionName == "note" then
+    local luaString = vim.inspect(event, { newline = "", indent = "" })
+    local transformed = luaString:gsub("(%w+)%s*=", '"%1":'):gsub("^%s*{", "["):gsub("}%s*$", "]")
+    table.insert(events, transformed)
+    --end
+  end
+
+  return events
 end
 
 PlayStateProcessor._diff = diff
