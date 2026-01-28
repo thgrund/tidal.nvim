@@ -20,6 +20,7 @@ function EventHighlights.start(highlight)
   if highlight.type == "playstate" then
     playstate.launch(highlight)
     playstateOsc.launch(highlight)
+    vim.notify("Playstate event highlighting launched")
   elseif highlight.type == "osc" then
     osc.launch(highlight)
     osc.handleMessageCallback = highlight.highlightCallback
