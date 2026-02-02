@@ -127,8 +127,7 @@ describe("PlayStateParser", function()
     end)
 
     it("should map multiple events within one cycle", function()
-      local plain =
-        '[((8,2),(18,2)),((30,2),(31,2))]((0,0/1)<(1,0/1))|_id_: "1", note: 0.0n (c5), orbit: 0, s: "superpiano"'
+      local plain = '[((8,2),(18,2)),((30,2),(31,2))]((0,0/1)<(1,0/1))|_id_: "1"'
 
       local eventIds = { "XRKUfOvTA", "UIhicEQF1" }
 
