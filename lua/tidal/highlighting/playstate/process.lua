@@ -283,14 +283,6 @@ function PlayStateProcessor.onDataProcessed(output)
 
       PlayStateProcessor._currentPlayState = currentPlayState
 
-      if PlayStateProcessor.ws ~= nil then
-        local events = PlayStateProcessor.currentToJSON(parsedOutput)
-
-        for _, event in ipairs(events) do
-          PlayStateProcessor.ws:send(event)
-        end
-      end
-
       return
     end
 
@@ -309,14 +301,6 @@ function PlayStateProcessor.onDataProcessed(output)
       activeEvents = updatedEvents.active
 
       PlayStateProcessor._currentPlayState = currentPlayState
-
-      if PlayStateProcessor.ws ~= nil then
-        local events = PlayStateProcessor.currentToJSON(currentPlayState)
-
-        for _, event in ipairs(events) do
-          PlayStateProcessor.ws:send(event)
-        end
-      end
 
       marker.cleanUpMarkers()
 
@@ -348,20 +332,5 @@ function PlayStateProcessor.getPlayState(start, stop, lock)
   end
 end
 
-function PlayStateProcessor.currentToJSON(playstate)
-  local events = {}
-
-  for _, event in pairs(playstate) do
-    -- if event.functionName == "n" or event.functionName == "note" then
-    local luaString = vim.inspect(event, { newline = "", indent = "" })
-    local transformed = luaString:gsub("(%w+)%s*=", '"%1":'):gsub("^%s*{", "["):gsub("}%s*$", "]")
-    table.insert(events, transformed)
-    --end
-  end
-
-  return events
-end
-
-PlayStateProcessor._diff = diff
 PlayStateProcessor._updateActive = updateActive
 return PlayStateProcessor
