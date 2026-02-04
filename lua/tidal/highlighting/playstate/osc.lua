@@ -2,9 +2,11 @@ local OSC = {}
 
 local losc = require("losc.src.losc")
 local pluginLibUv = require("losc.src.losc.plugins.udp-libuv")
+local process = require("tidal.highlighting.playstate.process")
+local socket = require("tidal.highlighting.playstate.socket")
 
 local highlight = require("tidal.highlighting.highlights")
-local process = require("tidal.highlighting.playstate.process")
+local processor = nil
 
 local state = require("tidal.core.state")
 
@@ -17,8 +19,10 @@ local function startServer(host, port)
       local msg = data.message
       local cyclePos = tonumber(msg[8])
 
-      process.setSam(cyclePos)
-      process.handleEvents()
+      if processor ~= nil then
+        processor.setSam(cyclePos)
+        processor.handleEvents()
+      end
     end)
   end)
 
@@ -50,7 +54,9 @@ local function startStyleServer(host, port)
 
         state.ghci:send(remoteControlCommand)
 
-        process.reset()
+        if processor ~= nil then
+          processor.reset()
+        end
       end
     end)
   end)
@@ -61,6 +67,12 @@ end
 function OSC.launch(highlightConf)
   local eventOsc = highlightConf.events.osc
   local styleOsc = highlightConf.styles.osc
+
+  if highlightConf.type == "stdio" then
+    processor = process
+  elseif highlightConf.type == "socket" then
+    processor = socket
+  end
 
   startServer(eventOsc.ip, eventOsc.port)
   startStyleServer(styleOsc.ip, styleOsc.port)
