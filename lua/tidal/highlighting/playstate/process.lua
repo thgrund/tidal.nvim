@@ -14,7 +14,6 @@ local currentPlayState = {}
 --- @type table<string, TidalEvent>
 local activeEvents = {}
 
-PlayStateProcessor.ws = nil
 PlayStateProcessor.timer = nil
 PlayStateProcessor.sam = 0
 PlayStateProcessor.interval = nil

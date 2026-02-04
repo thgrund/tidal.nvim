@@ -5,6 +5,7 @@ local highlights = require("tidal.highlighting.highlights")
 local osc = require("tidal.highlighting.osc")
 local playstate = require("tidal.highlighting.playstate")
 local playstateOsc = require("tidal.highlighting.playstate.osc")
+local socketOsc = require("tidal.highlighting.playstate.socketOsc")
 
 function EventHighlights.start(highlight)
   local fpsToMs = 1000 / highlight.fps
@@ -18,9 +19,13 @@ function EventHighlights.start(highlight)
   end
 
   if highlight.type == "playstate" then
-    playstate.launch(highlight)
+    playstate.launchStdOut(highlight)
     playstateOsc.launch(highlight)
     vim.notify("Playstate event highlighting launched")
+  elseif highlight.type == "socket" then
+    playstate.launchSocket(highlight)
+    socketOsc.launch(highlight)
+    vim.notify("Unix socket event highlighting launched")
   elseif highlight.type == "osc" then
     osc.launch(highlight)
     osc.handleMessageCallback = highlight.highlightCallback

@@ -22,6 +22,8 @@ import System.IO
 import Network.Socket as S
 import qualified Network.Socket.ByteString as NSB
 import Data.ByteString.Char8 (pack)
+import Data.Binary.Put
+import Data.Word (Word32)
 
 :{
 
@@ -65,8 +67,8 @@ createEventMsgPackObjects (Event _ (Just (Arc ws we)) a@(Arc ps pe) e) colStart 
   (ObjectMap $
      V.fromList
        [ (ObjectStr "id", ObjectStr (showId e))
-       , (ObjectStr "eventId", ObjectInt eventId)
-       , (ObjectStr "colStart", ObjectInt colStart)
+       , (ObjectStr "eventId", ObjectInt (eventId - 1))
+       , (ObjectStr "colStart", ObjectInt (colStart + 1))
        , ( ObjectStr "whole"
          , ObjectMap $
              V.fromList
@@ -129,13 +131,29 @@ createMsgPack arc replyType = do
 socketPath :: FilePath
 socketPath = "/tmp/tidal.sock"
 
+-- sendMessage :: IO Object -> IO ()
+-- sendMessage ioEvents = do
+--   events <- ioEvents
+--   let msg = BL.toStrict (Data.MessagePack.pack events)
+--   sock <- socket AF_UNIX S.Stream defaultProtocol
+--   connect sock (SockAddrUnix socketPath)
+--   NSB.sendAll sock msg
+--   close sock
+
 sendMessage :: IO Object -> IO ()
 sendMessage ioEvents = do
   events <- ioEvents
-  let msg = BL.toStrict (Data.MessagePack.pack events)
+  let msgLazy = Data.MessagePack.pack events
+      msgLen  = fromIntegral (BL.length msgLazy) :: Word32
+      framed :: BS.ByteString
+      framed =
+        BL.toStrict $
+          runPut $ do
+            putWord32be msgLen      -- 4-byte length prefix
+            putLazyByteString msgLazy
   sock <- socket AF_UNIX S.Stream defaultProtocol
   connect sock (SockAddrUnix socketPath)
-  NSB.sendAll sock msg
+  NSB.sendAll sock framed
   close sock
 
 :}
