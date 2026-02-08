@@ -164,17 +164,8 @@ end
 --- Send text to REPL
 --- @generic T
 --- @return T for method chaining
-function Repl:send(text, start, lockName)
+function Repl:send(text, start)
   local isLocked = false
-  local lockStart
-  local lockEnd
-
-  if lockName ~= 0 and lockName ~= nil then
-    isLocked = true
-
-    lockStart = lockName .. "_START"
-    lockEnd = lockName .. "_END"
-  end
 
   if start then
     local enrichedText = {}
@@ -199,15 +190,9 @@ function Repl:send(text, start, lockName)
 
   -- vim.notify("[tidal-fast] Repl send received", vim.log.levels.INFO)
   if self.stdin and not self.stdin:is_closing() then
-    if isLocked then
-      self.stdin:write('\n:{\nputStrLn "' .. lockStart .. '"\n:}\n')
-      self.stdin:write(text)
-      self.stdin:write('\n:{\nputStrLn "' .. lockEnd .. '"\n:}\n')
-    else
-      self.stdin:write(text)
+    self.stdin:write(text)
 
-      self.sendCallback()
-    end
+    self.sendCallback()
   end
 
   if self.proc == nil then
