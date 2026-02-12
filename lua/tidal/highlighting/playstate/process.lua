@@ -334,4 +334,5 @@ function PlayStateProcessor.getPlayState(start, stop, lock)
 end
 
 PlayStateProcessor._updateActive = updateActive
+PlayStateProcessor._diff = diff
 return PlayStateProcessor

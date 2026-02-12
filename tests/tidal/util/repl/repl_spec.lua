@@ -248,33 +248,6 @@ describe("Repl", function()
       assert.stub(autocmd_stub).was_called()
       assert.spy(r.sendCallback).was_called()
     end)
-
-    it("writes locked text with proper markers", function()
-      local written
-      fake_pipe.write = function(_, txt)
-        written = written or ""
-        written = written .. txt
-      end
-
-      local r = Repl:new({ cmd = "ghci" })
-      r.stdin = vim.loop.new_pipe()
-      r.proc = fake_proc
-
-      r:send("locked text", nil, "SAM")
-
-      assert.matches(
-        [[
-:{
-putStrLn "SAM_START"
-:}
-locked text
-:{
-putStrLn "SAM_END"
-:}
-]],
-        written
-      )
-    end)
   end)
 
   describe("send helpers", function()

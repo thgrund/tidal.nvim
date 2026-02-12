@@ -73,7 +73,7 @@ describe("PlayState", function()
       local testMe
       local initState = {
         "INIT_PLAYSTATE_START",
-        '[((8,2),(18,2)))]((0,0/1)<(1,0/1))|_id_: "1", orbit: 0, s: "superpiano"',
+        "1,[(8,2)],0,1,1,1,0,1,superpiano",
         "INIT_PLAYSTATE_END",
       }
 
@@ -92,7 +92,7 @@ describe("PlayState", function()
 
       local extendState = {
         "INIT_PLAYSTATE_START",
-        '[((17,3),(27,3))](0,0/1)-((1,0/1)<(2,0/1))-(3,0/1)|_id_: "2", orbit: 0, s: "superpiano"',
+        "2,[(17,3)],0,1,3,1,0,1,superpiano",
         "INIT_PLAYSTATE_END",
       }
 
@@ -108,7 +108,7 @@ describe("PlayState", function()
 
       local initState = {
         "INIT_PLAYSTATE_START",
-        '[((8,2),(18,2)))]((0,0/1)<(1,0/1))|_id_: "1", orbit: 0, s: "superpiano"',
+        "1,[(8,2)],0,1,1,1,0,1,superpiano",
         "INIT_PLAYSTATE_END",
       }
 
@@ -127,7 +127,7 @@ describe("PlayState", function()
 
       local extendState = {
         "EXTEND_PLAYSTATE_START",
-        '[((17,3),(27,3))](0,0/1)-((1,0/1)<(2,0/1))-(3,0/1)|_id_: "2", orbit: 0, s: "superpiano"',
+        "2,[(17,3)],0,1,3,1,0,1,superpiano",
         "EXTEND_PLAYSTATE_END",
       }
 
@@ -145,10 +145,10 @@ describe("PlayState", function()
   describe("parse", function()
     it("should return the expected parsed events", function()
       local plain = {
-        '[((8,2),(18,2)),((30,2),(31,2))](0>1)|_id_: "1", note: 0.0n (c5), orbit: 0, s: "superpiano"',
-        '[((17,3),(27,3)),((38,3),(39,3))]0-(1>2)-3|_id_: "1", note: 9.0n (a5), orbit: 0, s: "superpiano"',
-        '[((19,4),(29,4)),((40,4),(41,4))]0-(2>2½)|_id_: "1", note: 9.0n (a5), orbit: 0, s: "superpiano"',
-        '[((19,5),(29,5)),((40,5),(41,5))](2½>3)-5|_id_: "1", note: 9.0n (a5), orbit: 0, s: "superpiano"',
+        "1,[(1,1),(2,1)],0,1,1,1,0,1,superpiano",
+        "2,[(3,2),(2,2)],1,1,2,1,0,1,superpiano",
+        "3,[(5,3),(5,3)],2,1,3,1,0,1,superpiano",
+        "4,[(7,4),(7,4)],3,1,4,1,0,1,superpiano",
       }
 
       local count = 0
@@ -163,10 +163,10 @@ describe("PlayState", function()
       eq(count, 8)
     end)
 
-    it("should return the expected parsed events within one are", function()
+    it("should return the expected parsed events within one arc", function()
       local plain = {
-        '[((8,2),(18,2)),((30,2),(31,2))](0>0.5)|_id_: "1", note: 0.0n (c5), orbit: 0, s: "superpiano"',
-        '[((17,3),(27,3)),((38,3),(39,3))](0.5>1)|_id_: "1", note: 9.0n (a5), orbit: 0, s: "superpiano"',
+        "1,[(1,1),(2,1)],0,1,1,2,0,1,superpiano",
+        "2,[(3,2),(2,2)],1,1,1,1,9,1,superpiano",
       }
 
       local count = 0
