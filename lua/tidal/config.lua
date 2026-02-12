@@ -26,7 +26,6 @@ local defaults = {
       enabled = true,
       highlight = {
         type = "stdio",
-        autostart = false,
         styles = {
           osc = {
             ip = "127.0.0.1",

@@ -40,14 +40,6 @@ local function setup_user_commands()
   end, { desc = "Launch Tidal Notification Buffer" })
   vim.api.nvim_create_user_command("TidalQuit", api.exit_tidal, { desc = "Quit Tidal instance" })
 
-  vim.api.nvim_create_user_command("TidalStartEventHighlighting", function()
-    api.start_event_highlighting(config.options.boot.tidal)
-  end, { desc = "Launch Tidal Event Highlighting" })
-
-  vim.api.nvim_create_user_command("TidalStopEventHighlighting", function()
-    api.stop_event_highlighting()
-  end, { desc = "Stop Tidal Event Highlighting" })
-
   vim.api.nvim_create_user_command("Tidal", function()
     api.launch_tidal(config.options.boot)
   end, { desc = "Launch Tidal instance" })

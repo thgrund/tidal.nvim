@@ -22,9 +22,7 @@ function M.launch_tidal(args)
   if args.tidal.enabled then
     boot.tidal(args.tidal, args.split)
   end
-  if args.tidal.highlight.autostart then
-    M.start_event_highlighting(args.tidal)
-  end
+  M.start_event_highlighting(args.tidal)
   if args.sclang.enabled then
     -- invert the split option if tidal is opened already
     boot.sclang(args.sclang, args.split == "v" and args.tidal.enabled and "h" or "v")

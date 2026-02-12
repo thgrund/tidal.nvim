@@ -56,7 +56,6 @@ return {
       file = "/Users/Your/Path/to/tidalcycles/BootTidal.hs",
       enabled = true,
       highlight = {
-        autostart = false,
         styles = {
           osc = {
             ip = "127.0.0.1",
@@ -119,8 +118,6 @@ return {
 
 - `:TidalLaunch`: starts the TidalCycles process
 - `:TidalQuit`: stops the TidalCycles process
-- `:TidalStartEventHighlighting`: sets up an osc client for receiving TidalCycles hihglight events and style messages
-- `:TidalStopEventHighlighting`: stops the osc clients
 - `:TidalNotification`: This opens a new buffer, that will display the stdout and stderr of the TidalCycles repl session
 - `:SuperColliderNotification`: This opens a new buffer, that will display the stdout and stderr of the SuperCollider repl session
 
