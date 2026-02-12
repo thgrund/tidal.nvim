@@ -27,9 +27,15 @@ function M.mapEvent(plain)
   -- 1. Extract the leading id (before first comma)
   local id = plain:match("^([^,]+),")
 
+  local plainCtx = (plain:match("%[(.-)%]"))
+
+  if plainCtx == nil then
+    return {}
+  end
+
   -- 2. Extract the event list inside [ ... ]
-  local plainCtx = ("[" .. plain:match("%[(.-)%]") .. "]")
-  local ctxs = M.mapCtx(plainCtx)
+  local wrappedPlainCtx = ("[" .. plainCtx .. "]")
+  local ctxs = M.mapCtx(wrappedPlainCtx)
 
   -- 3. Extract all remaining numeric fields AFTER the event list
   local afterEvents = plain:match("%]%s*,(.*)")

@@ -200,5 +200,15 @@ describe("PlayStateParser", function()
 
       eq(passedIn, expected)
     end)
+
+    it("should handle empty plain correctly ", function()
+      local plain = ""
+
+      local passedIn = playStateParser.mapEvent(plain)
+
+      local expected = {}
+
+      eq(passedIn, expected)
+    end)
   end)
 end)
