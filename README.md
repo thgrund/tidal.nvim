@@ -2,6 +2,10 @@
 
 tidal.nvim is (another) Neovim plugin for livecoding with [TidalCycles](https://tidalcycles.org)
 
+![pluginExample](./assets/pluginExample.png)
+
+See it in action [here](https://www.youtube.com/watch?v=l2IrELGzFpc)
+
 ## Features
 
 - User commands to start/stop Tidal and (optionally) SuperCollider processes in
