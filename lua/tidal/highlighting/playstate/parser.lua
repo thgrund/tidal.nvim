@@ -1,68 +1,8 @@
 local M = {}
 
----@param input string
----@return string[] # {col, whole, id}
-function M.extract(input)
-  local col = input:match("^(%b[])")
-  if not col then
-    return { "", "", "" }
-  end
-
-  local after_col = input:sub(#col + 1)
-  local whole = after_col:match("^(.-)|")
-  whole = whole or ""
-
-  local id = input:match('_id_:%s*"([^"]+)"') or ""
-
-  return { col, whole, id }
-end
-
-local function tupleToNumber(tuple)
-  -- remove surrounding parentheses
-  local inner = tuple:sub(2, -2)
-
-  -- split "cycle,fraction"
-  local cycle, frac = inner:match("^%s*(-?%d+)%s*,%s*(%d+/%d+)%s*$")
-  if not cycle or not frac then
-    return nil
-  end
-
-  local num, den = frac:match("^(%d+)%/(%d+)$")
-  if not num or not den then
-    return nil
-  end
-
-  return tonumber(cycle) + tonumber(num) / tonumber(den)
-end
-
-function M.mapWhole(plain)
-  if not plain then
-    return nil
-  end
-
-  local first, last
-
-  for tuple in plain:gmatch("%(%s*-?%d+%s*,%s*%d+/%d+%s*%)") do
-    if not first then
-      first = tuple
-    end
-    last = tuple
-  end
-
-  if not first or not last then
-    return nil
-  end
-
-  return {
-    start = tupleToNumber(first),
-    stop = tupleToNumber(last),
-  }
-end
-
-function M.mapPos(str)
+function M.mapCtx(str)
   local result = {}
   local n = 0
-
   for x, y in str:gmatch("%((%d+),(%d+)%)") do
     n = n + 1
     result[n] = { tonumber(x), tonumber(y) }
@@ -81,27 +21,61 @@ function M.genEventId()
   return table.concat(id)
 end
 
----@return TidalEvent[]
-function M.parse(line)
-  local extracted = M.extract(line)
-  local pos = M.mapPos(extracted[1])
+function M.mapEvent(plain)
   local result = {}
 
-  if #line > 0 then
-    for i = 1, #pos, 2 do
-      local colStart = pos[i][1] + 1
-      local eventId = pos[i][2] - 1
-      local whole = M.mapWhole(extracted[2])
-      result[M.genEventId()] = {
-        id = extracted[3],
-        colStart = colStart,
-        eventId = eventId,
-        whole = whole,
-      }
+  -- 1. Extract the leading id (before first comma)
+  local id = plain:match("^([^,]+),")
+
+  -- 2. Extract the event list inside [ ... ]
+  local plainCtx = ("[" .. plain:match("%[(.-)%]") .. "]")
+  local ctxs = M.mapCtx(plainCtx)
+
+  -- 3. Extract all remaining numeric fields AFTER the event list
+  local afterEvents = plain:match("%]%s*,(.*)")
+  local numbers = {}
+
+  if afterEvents then
+    for num in afterEvents:gmatch("([^,]+)") do
+      local n = tonumber(num)
+      if n then
+        table.insert(numbers, n)
+      end
     end
   end
 
+  -- We only care about:
+  -- numbers[1] / numbers[2] = start
+  -- numbers[3] / numbers[4] = stop
+  local startNum = numbers[1] or 0
+  local startDen = numbers[2] or 1
+  local stopNum = numbers[3] or 0
+  local stopDen = numbers[4] or 1
+
+  local wholeStart = startNum / startDen
+  local wholeStop = stopNum / stopDen
+
+  -- 4. Parse each (col, len) pair inside the event list
+  for _, ctx in ipairs(ctxs) do
+    local eventKey = M.genEventId()
+
+    result[eventKey] = {
+      id = id,
+      eventId = ctx[2] - 1,
+      colStart = ctx[1] + 1,
+      whole = {
+        start = wholeStart,
+        stop = wholeStop,
+      },
+    }
+  end
+
   return result
+end
+
+---@return TidalEvent[]
+function M.parse(line)
+  return M.mapEvent(line)
 end
 
 return M

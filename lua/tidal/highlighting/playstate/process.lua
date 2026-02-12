@@ -330,7 +330,6 @@ function PlayStateProcessor.getPlayState(start, stop, lock)
     state.ghci.stdin:write('\n:{\nputStrLn "' .. lock .. '_START"\n:}\n')
     state.ghci.stdin:write("\nstreamActivePt tidal (Arc " .. start .. " " .. stop .. ")\n")
     state.ghci.stdin:write('\n:{\nputStrLn "' .. lock .. '_END"\n:}\n')
-    -- state.ghci:send("streamActivePt tidal (Arc " .. start .. " " .. stop .. ")", nil, lock)
   end
 end
 

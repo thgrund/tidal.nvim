@@ -9,14 +9,6 @@ import Data.Maybe (fromMaybe)
 import Data.List (intercalate, sortOn)
 
 :{
-prettyRat' r
-  -- | unit == 0 && frac > 0 = showFrac (numerator frac) (denominator frac)
-  | unit == 0 && frac > 0 = (show $ numerator frac) ++ "/" ++ (show $ denominator frac)
-  | otherwise = "("++ show unit ++ "," ++  (show (numerator frac))  ++ "/" ++ (show (denominator frac)) ++ ")"
-  where
-    unit = floor r :: Int
-    frac = r - toRational unit
-
 
 hasClockId :: Event ValueMap -> Bool
 hasClockId (Event _ _ _ eventMap) =
@@ -25,35 +17,73 @@ hasClockId (Event _ _ _ eventMap) =
     _                 -> False
 
 
-showIdOnly eventMap = case Data.Map.lookup "_id_" eventMap of
-  Just (VS idVal) -> "_id_: \"" ++ idVal ++ "\""
-  _ -> "_id_: not found" 
+showId eventMap = case Data.Map.lookup "_id_" eventMap of
+  Just (VS idVal) -> idVal
+  _ -> "none" 
 
-showEvent' (Event _ (Just (Arc ws we)) a@(Arc ps pe) e) =
-  (h ++ "(" ++ prettyRat' ps ++ "<" ++ prettyRat' pe ++ ")" ++ t ++ "|", showIdOnly e)
-    where
-        h
-          | ws == ps = ""
-          | otherwise = prettyRat' ws ++ "-"
-        t
-          | we == pe = ""
-          | otherwise = "-" ++ prettyRat' we
-showEvent' (Event _ Nothing a e) =
-  ("~" ++ show a ++ "~|", showIdOnly e)
+showS eventMap = case Data.Map.lookup "s" eventMap of
+  Just (VS soundVal) -> soundVal
+  _ -> "none" 
+
+showNote eventMap = case Data.Map.lookup "note" eventMap of
+  Just (VN noteVal) -> unNote noteVal 
+  _ ->0.0 
+
+
+prettyRat' r = ((show $ numerator r), (show $ denominator r))
+
+-- map (\ ctx -> (fst $ fst ctx) (snd $ fst ctx) ) 
+
+
+-- createEventMsgPackObjects  :: ( Show a1 ) => EventF (ArcF Rational) (Map.Map String Value) -> a1 -> [String]
+-- createEventMsgPackObjects (Event _ (Just (Arc ws we)) a@(Arc ps pe) e) contextPositions=
+--   [showId e, show (transformCtx contextPositions), fst start, snd start, fst stop, snd stop, fst note, snd note, showS e]
+--   where
+--     start = prettyRat' ws
+--     stop = prettyRat' we
+--     note = prettyRat' (showNote e) 
+--     transformCtx x = map (\ ctx -> (fst $ fst ctx) (snd $ fst ctx) ) x
+
+createEventMsgPackObjects
+  :: EventF (ArcF Rational) (Map.Map String Value)
+  -> [((Int, Int), (Int, Int))]
+  -> [String]
+createEventMsgPackObjects (Event _ (Just (Arc ws we)) _ e) contextPositions =
+  [ showId e
+  , show (transformCtx contextPositions)
+  , fst start, snd start
+  , fst stop,  snd stop
+  , fst note,  snd note
+  , showS e
+  ]
   where
+    start = prettyRat' ws
+    stop  = prettyRat' we
+    note  = prettyRat' ( toRational (showNote e))
+    transformCtx :: [((Int, Int), (Int, Int))] -> [(Int, Int)]
+    transformCtx = map fst
 
 -- Show context of an event
-showEventAll' e = show (context e) ++ uncurry (++) (showEvent' e)
+-- showEventAll' e = show (context e) ++ uncurry (++) (showEvent' e)
+--createAllEventMsgPackObjects e = map (\ ctx -> createEventMsgPackObjects e (fst $ fst ctx) (snd $ fst ctx) ) (contextPosition $ context e)
+createAllEventMsgPackObjects e = createEventMsgPackObjects e (contextPosition $ context e) 
 
 -- Show everything, including event context
-showAll' :: [Event ValueMap] -> String
-showAll' e = intercalate "\n" $ map showEventAll' $ sortOn part $ filter (not . hasClockId) e 
+-- showAll' :: [Event ValueMap] -> String
+
+-- sanitizeAll es = concatMap createAllEventMsgPackObjects $ sortOn part $ filter (not . hasClockId) es
+sanitizeAll :: [Event ValueMap] -> [[String]]
+sanitizeAll es =
+  map createAllEventMsgPackObjects $
+    sortOn part $
+      filter (not . hasClockId) es
 
 streamActivePt s arc = do
   pMap <- readMVar (sPMapMV s)
   cMap <- readMVar (sStateMV s)
   events <- ioEvents cMap pMap 
-  putStrLn $ showAll' events
+ --  putStrLn (intercalate "," (sanitizeAll events))
+  putStrLn (intercalate "\n" (map (intercalate ",") (sanitizeAll events)))
   where
     showKV cMap (k, x) =  (query $ psPattern x) (State (arc) cMap)
     ioEvents cMap pMap = return (concatMap (showKV cMap) $ Map.toList pMap)
@@ -62,3 +92,4 @@ clock' = pR "clock"
 clock pt = p "clock" $ clock' pt
 
 :}
+
