@@ -184,10 +184,17 @@ vim.api.nvim_create_autocmd("User", {
 ### Event Highlighting
 
 `tidal.nvim` provides the event highlighting for TidalCycles. This plugin was configured
-with TidalCycles version >= 1.10.0 in mind. To enable it, you have two options:
+with TidalCycles version >= 1.10.0 in mind. This feature is automatically enabled.
 
-1. Execute `:TidalCyclesStartEventHighlighting` after TidalCycles was launched.
-2. Set the autostart property for the highlight in the config to true.
+In case you use a custom BootTidal.hs file, you need to add the clock target manually:
+
+```haskell
+let clockShape = OSC "/ping" $ Named {requiredArgs = ["clock"]}
+let clockTarget = Target {oName = "clock", oAddress = "127.0.0.1", oPort = 6013, oLatency = ((3/10)), oSchedule = Live, oWindow = Nothing, oHandshake = False, oBusPort = Nothing }
+
+tidalInst <- mkTidalWith [(superdirtTarget { oLatency = -0.02 }, [superdirtShape]), (clockTarget, [clockShape])] (defaultConfig {cFrameTimespan = 1/50, cProcessAhead = 1/20})
+
+```
 
 You can customize the event highlighting markers in multiple ways:
 
