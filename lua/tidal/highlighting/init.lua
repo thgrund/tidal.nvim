@@ -20,11 +20,9 @@ function EventHighlights.start(highlight)
   if highlight.type == "stdio" then
     playstate.launchStdOut(highlight)
     playstateOsc.launch(highlight)
-    vim.notify("Stdio event highlighting launched")
   elseif highlight.type == "socket" then
     playstate.launchSocket(highlight)
     playstateOsc.launch(highlight)
-    vim.notify("Unix socket event highlighting launched")
   elseif highlight.type == "osc" then
     osc.launch(highlight)
     osc.handleMessageCallback = highlight.highlightCallback
