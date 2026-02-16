@@ -286,17 +286,34 @@ describe("Repl", function()
   -- exit -------------------------------------------------------------------
   ---------------------------------------------------------------------------
   describe("exit", function()
-    it("stops the job on exit", function()
-      local jobstop_stub = stub(vim.fn, "jobstop")
+    it("kills and closes the process, deletes buffer, and notifies", function()
+      local notify_stub = stub(vim, "notify")
+
+      -- fake proc object with methods
+      local proc = {
+        is_closing = stub().returns(false),
+        kill = stub(), -- will be called as a method
+        close = stub(),
+      }
+
+      local buf = { delete = stub() }
 
       local r = Repl:new({ cmd = "ghci" })
-      r.proc = 123
+      r.proc = proc
+      r.buf = buf
 
       r:exit()
 
-      assert.stub(jobstop_stub).was_called_with(123)
+      -- assert method calls
+      assert.stub(proc.is_closing).was_called(1)
+      -- The first argument is self (the proc table), the second is "sigterm"
+      assert.stub(proc.kill).was_called_with(proc, "sigterm")
+      assert.stub(proc.close).was_called_with(proc)
+      assert.stub(buf.delete).was_called(1)
+      assert.stub(notify_stub).was_called_with("[tidal] ghci stopped")
 
-      jobstop_stub:revert()
+      -- cleanup
+      notify_stub:revert()
     end)
   end)
 
