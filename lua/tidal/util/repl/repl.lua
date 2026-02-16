@@ -137,8 +137,6 @@ function Repl:start(opts)
     return vim.notify("[tidal] failed to spawn " .. self.opts.cmd, vim.log.levels.ERROR)
   end
 
-  local buf = api.nvim_create_buf(false, true)
-  api.nvim_buf_set_name(buf, "tidal-fast://" .. self.opts.cmd)
   vim.notify("[tidal] " .. self.opts.cmd .. " started (pipe mode)", vim.log.levels.INFO)
 
   self:attach(self.stdout, "stdout")
@@ -165,8 +163,6 @@ end
 --- @generic T
 --- @return T for method chaining
 function Repl:send(text, start)
-  local isLocked = false
-
   if start then
     local enrichedText = {}
     local rowIndex = 0
@@ -224,9 +220,11 @@ end
 --- Close the REPL
 --- @return self for method chaining
 function Repl:exit()
-  if self.proc then
-    -- Removes buffers and closes windows
-    vim.fn.jobstop(self.proc)
+  if self.proc and not self.proc:is_closing() then
+    self.proc:kill("sigterm") -- or "sigkill"
+    self.proc:close()
+    self.buf:delete()
+    vim.notify(string.format("[tidal] %s stopped", self.opts.cmd))
   end
   return self
 end
