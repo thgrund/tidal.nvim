@@ -1,4 +1,4 @@
-local Repl = require("tidal.util.repl.repl")
+local Repl = require("tidal.repl.repl")
 local marker = require("tidal.highlighting.marker")
 
 ---@class Ghci : Repl

@@ -119,8 +119,8 @@ describe("Repl", function()
     --------------------------------------------------------------------------
     -- Load module ------------------------------------------------------------
     --------------------------------------------------------------------------
-    package.loaded["tidal.util.repl.repl"] = nil
-    Repl = require("tidal.util.repl.repl")
+    package.loaded["tidal.repl.repl"] = nil
+    Repl = require("tidal.repl.repl")
   end)
 
   -- Restore the original vim after tests

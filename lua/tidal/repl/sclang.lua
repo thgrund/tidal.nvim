@@ -1,4 +1,4 @@
-local Repl = require("tidal.util.repl.repl")
+local Repl = require("tidal.repl.repl")
 
 ---@class Sclang : Repl
 ---@field buf Buffer

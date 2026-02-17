@@ -1,5 +1,5 @@
-local Ghci = require("tidal.util.repl.ghci")
-local Sclang = require("tidal.util.repl.sclang")
+local Ghci = require("tidal.repl.ghci")
+local Sclang = require("tidal.repl.sclang")
 local state = require("tidal.core.state")
 
 local M = {}
