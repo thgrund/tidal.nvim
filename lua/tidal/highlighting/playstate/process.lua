@@ -287,7 +287,9 @@ function PlayStateProcessor.onDataProcessed(output)
 
       PlayStateProcessor._currentPlayState = currentPlayState
 
-      PlayStateProcessor.onPlayStateChange(currentPlayState)
+      if PlayStateProcessor.onPlayStateChange ~= nil then
+        PlayStateProcessor.onPlayStateChange(currentPlayState)
+      end
 
       return
     end
@@ -308,7 +310,9 @@ function PlayStateProcessor.onDataProcessed(output)
 
       PlayStateProcessor._currentPlayState = currentPlayState
 
-      PlayStateProcessor.onPlayStateChange(currentPlayState)
+      if PlayStateProcessor.onPlayStateChange ~= nil then
+        PlayStateProcessor.onPlayStateChange(currentPlayState)
+      end
 
       marker.cleanUpMarkers()
 
