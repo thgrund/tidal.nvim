@@ -21,6 +21,8 @@ PlayStateProcessor._lastReceivedPlayState = nil
 PlayStateProcessor._currentPlayState = {}
 
 PlayStateProcessor.handleMessageCallback = nil
+PlayStateProcessor.onSamChange = nil
+PlayStateProcessor.onPlayStateChange = nil
 
 local function removeFirstAndLast(t)
   if not t or type(t) ~= "table" or #t < 2 then
@@ -172,6 +174,8 @@ function PlayStateProcessor.setSam(sam)
 
   local intSam = math.floor(sam)
 
+  PlayStateProcessor.onSamChange(sam)
+
   if prevSam ~= nil and math.floor(prevSam) ~= intSam and next(currentPlayState) ~= nil then
     PlayStateProcessor.getPlayState(intSam + 3, intSam + 4, LOCK_EXTEND_PLAYSTATE)
   end
@@ -258,6 +262,7 @@ function PlayStateProcessor.parse(list)
         extmark = marker.extMarks[eventId][colStart]
         parsed.fun = extmark.functionName
         parsed.val = extmark.originalText
+        parsed.quoteIndex = extmark.quoteIndex
       end
 
       result[key] = parsed
@@ -282,6 +287,8 @@ function PlayStateProcessor.onDataProcessed(output)
 
       PlayStateProcessor._currentPlayState = currentPlayState
 
+      PlayStateProcessor.onPlayStateChange(currentPlayState)
+
       return
     end
 
@@ -300,6 +307,8 @@ function PlayStateProcessor.onDataProcessed(output)
       activeEvents = updatedEvents.active
 
       PlayStateProcessor._currentPlayState = currentPlayState
+
+      PlayStateProcessor.onPlayStateChange(currentPlayState)
 
       marker.cleanUpMarkers()
 

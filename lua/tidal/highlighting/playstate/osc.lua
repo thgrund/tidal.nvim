@@ -61,6 +61,14 @@ local function startStyleServer(host, port)
     end)
   end)
 
+  osc:add_handler("/neovim/reset", function()
+    vim.schedule(function()
+      if processor ~= nil then
+        processor.reset()
+      end
+    end)
+  end)
+
   osc:open()
 end
 

@@ -19,7 +19,8 @@ local state = require("tidal.core.state")
 function PlayState.launchStdOut(highlight)
   state.ghci.onDataProcessed = process.onDataProcessed
 
-  process.handleMessageCallback = highlight.highlightCallback
+  process.onSamChange = highlight.onSamChange
+  process.onPlayStateChange = highlight.onPlayStateChange
 
   local tidalExtensionPath = vim.api.nvim_get_runtime_file("tidal/playstate.hs", false)[1]
   state.ghci.stdin:write(string.format('\n:{\n:script "%s"\n:}\n', tidalExtensionPath))
@@ -31,8 +32,6 @@ function PlayState.launchStdOut(highlight)
 end
 
 function PlayState.launchSocket(highlight)
-  socket.handleMessageCallback = highlight.highlightCallback
-
   local tidalSocketPackPath = vim.api.nvim_get_runtime_file("tidal/socket.hs", false)[1]
   state.ghci.stdin:write(string.format('\n:{\n:script "%s"\n:}\n', tidalSocketPackPath))
 

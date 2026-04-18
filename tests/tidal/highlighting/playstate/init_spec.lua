@@ -41,7 +41,7 @@ describe("PlayState", function()
       end
       package.loaded["tidal.highlighting.playstate.process"].reset = function() end
 
-      playstate.launchStdOut({ highlightCallback = function() end, fps = 60, type = "stdio" })
+      playstate.launchStdOut({ fps = 60, type = "stdio" })
       state.ghci.sendCallback()
 
       eq(expected, actual)

@@ -25,7 +25,6 @@ function EventHighlights.start(highlight)
     playstateOsc.launch(highlight)
   elseif highlight.type == "osc" then
     osc.launch(highlight)
-    osc.handleMessageCallback = highlight.highlightCallback
     osc.setInterval(fpsToMs)
   end
 end

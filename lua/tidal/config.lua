@@ -41,7 +41,8 @@ local defaults = {
           },
         },
         fps = 60,
-        highlightCallback = function() end,
+        onSamChange = function() end,
+        onPlayStateChange = function() end,
       },
     },
     sclang = {
