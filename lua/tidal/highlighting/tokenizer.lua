@@ -3,7 +3,8 @@ local Tokenizer = {}
 local lineProcessor = require("tidal.highlighting.lineprocessor")
 local marker = require("tidal.highlighting.marker")
 
-Tokenizer.lastEventId = 0
+Tokenizer.eventIdBase = 0
+Tokenizer.lastEventId = Tokenizer.eventIdBase
 
 -- Public function to transform control patterns into deltaContext format
 -- @param line string: The input line to process
