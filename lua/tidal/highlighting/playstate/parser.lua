@@ -43,7 +43,7 @@ function M.mapEvent(plain)
 
   if afterEvents then
     for num in afterEvents:gmatch("([^,]+)") do
-      local n = tonumber(num)
+      local n = num
       if n then
         table.insert(numbers, n)
       end
@@ -53,18 +53,31 @@ function M.mapEvent(plain)
   -- We only care about:
   -- numbers[1] / numbers[2] = start
   -- numbers[3] / numbers[4] = stop
-  local startNum = numbers[1] or 0
-  local startDen = numbers[2] or 1
-  local stopNum = numbers[3] or 0
-  local stopDen = numbers[4] or 1
+  local startNum = tonumber(numbers[1]) or 0
+  local startDen = tonumber(numbers[2]) or 1
+  local stopNum = tonumber(numbers[3]) or 0
+  local stopDen = tonumber(numbers[4]) or 1
+  local noteNum = tonumber(numbers[5]) or 0
+  local noteDen = tonumber(numbers[6]) or 1
+  local sound = tostring(numbers[7]) or ""
 
   local wholeStart = startNum / startDen
   local wholeStop = stopNum / stopDen
+  local note = noteNum / noteDen
+
+  local event = {
+    id = id,
+    whole = {
+      start = wholeStart,
+      stop = wholeStop,
+    },
+    note = note,
+    sound = sound,
+  }
 
   -- 4. Parse each (col, len) pair inside the event list
   for _, ctx in ipairs(ctxs) do
     local eventKey = M.genEventId()
-
     result[eventKey] = {
       id = id,
       eventId = ctx[2] - 1,
@@ -76,7 +89,7 @@ function M.mapEvent(plain)
     }
   end
 
-  return result
+  return event, result
 end
 
 ---@return TidalEvent[]

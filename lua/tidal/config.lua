@@ -43,6 +43,7 @@ local defaults = {
         fps = 60,
         onSamChange = function() end,
         onPlayStateChange = function() end,
+        onParsedOutputChange = function() end,
       },
     },
     sclang = {

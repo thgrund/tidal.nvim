@@ -5,14 +5,12 @@ local orig_schedule
 describe("PlayState", function()
   local process
   local parser
-  local marker
 
   local eq = assert.are.same
 
   before_each(function()
     process = require("tidal.highlighting.playstate.process")
     parser = require("tidal.highlighting.playstate.parser")
-    marker = require("tidal.highlighting.marker")
 
     process._currentPlayState = {}
     process._lastReceivedPlayState = {}

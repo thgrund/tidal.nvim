@@ -23,6 +23,7 @@ PlayStateProcessor._currentPlayState = {}
 PlayStateProcessor.handleMessageCallback = nil
 PlayStateProcessor.onSamChange = nil
 PlayStateProcessor.onPlayStateChange = nil
+PlayStateProcessor.onParsedOutputChange = nil
 
 local function removeFirstAndLast(t)
   if not t or type(t) ~= "table" or #t < 2 then
@@ -248,25 +249,38 @@ end
 --- so that can be processed.
 ---@param list string[]
 ---@return table<string, TidalEvent>
-function PlayStateProcessor.parse(list)
+function PlayStateProcessor.parse(list, lock)
   local result = {}
+  local parsedEvents = {}
 
   for _, raw in ipairs(list) do
-    for key, parsed in pairs(playStateParser.parse(raw)) do
-      -- Enricht parsed result with extmark data
-      local extmark
-      local eventId = parsed.eventId
-      local colStart = parsed.colStart
+    local parsedEvent, mappedEvents = playStateParser.parse(raw)
 
-      if marker.extMarks[eventId] and marker.extMarks[eventId][colStart] then
-        extmark = marker.extMarks[eventId][colStart]
-        parsed.fun = extmark.functionName
-        parsed.val = extmark.originalText
-        parsed.quoteIndex = extmark.quoteIndex
+    table.insert(parsedEvents, parsedEvent)
+
+    if mappedEvents ~= nil then
+      for key, parsed in pairs(mappedEvents) do
+        -- Enricht parsed result with extmark data
+        local extmark
+        local eventId = parsed.eventId
+        local colStart = parsed.colStart
+
+        if marker.extMarks[eventId] and marker.extMarks[eventId][colStart] then
+          extmark = marker.extMarks[eventId][colStart]
+          parsed.fun = extmark.functionName
+          parsed.val = extmark.originalText
+          parsed.quoteIndex = extmark.quoteIndex
+        end
+
+        result[key] = parsed
       end
-
-      result[key] = parsed
     end
+  end
+
+  if PlayStateProcessor.onParsedOutputChange ~= nil then
+    local parsedEventsWithLock = {}
+    parsedEventsWithLock[lock] = parsedEvents
+    PlayStateProcessor.onParsedOutputChange(parsedEventsWithLock)
   end
 
   return result
@@ -279,7 +293,7 @@ function PlayStateProcessor.onDataProcessed(output)
 
       PlayStateProcessor._lastReceivedPlayState = output
 
-      local parsedOutput = PlayStateProcessor.parse(output)
+      local parsedOutput = PlayStateProcessor.parse(output, LOCK_EXTEND_PLAYSTATE)
 
       for key, parsed in pairs(parsedOutput) do
         currentPlayState[key] = parsed
@@ -299,7 +313,7 @@ function PlayStateProcessor.onDataProcessed(output)
 
       PlayStateProcessor._lastReceivedPlayState = output
 
-      local parsedOutput = PlayStateProcessor.parse(output)
+      local parsedOutput = PlayStateProcessor.parse(output, LOCK_INIT_PLAYSTATE)
 
       currentPlayState = parsedOutput
 
