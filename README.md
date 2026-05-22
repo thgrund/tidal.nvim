@@ -141,6 +141,28 @@ cd /Applications/SuperCollider.app/Contents/MacOS
 ./sclang "$@"
 ```
 
+#### Remote backends
+
+Instead of spawning a new `ghci` process, tidal.nvim can connect to an existing
+Tidal process over a Unix socket. This is useful when running Tidal outside of
+Neovim, e.g. to allow multiple editors to connect to the same Tidal session.
+
+Set `boot.tidal.remote` in your config:
+
+```lua
+boot = {
+  tidal = {
+    remote = {
+      --- Path to the Unix domain socket exposed by the running ghci process
+      unix = "/tmp/tidal.sock",
+      --- Optional: override the starting event ID (important when using
+      --- multiple editors to prevent collisions)
+      eventIdBase = 0,
+    },
+  },
+},
+```
+
 ### Keymaps
 
 `tidal.nvim` provides five configurable keymaps in `.tidal` and `.scd` files,
