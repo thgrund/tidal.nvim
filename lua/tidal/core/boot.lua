@@ -26,8 +26,6 @@ function M.tidal(opts, split)
   })
 
   if opts.remote then
-    opts.highlight.events.osc.port = opts.remote.oscPort or opts.highlight.events.osc.port
-    opts.highlight.styles.osc.port = opts.remote.stylePort or opts.highlight.styles.osc.port
     tokenizer.eventIdBase = opts.remote.eventIdBase or tokenizer.eventIdBase
     tokenizer.lastEventId = tokenizer.eventIdBase
     state.ghci = ghci:connect_remote(opts.remote)

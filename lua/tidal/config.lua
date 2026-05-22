@@ -7,7 +7,7 @@ local M = {}
 
 --- Connect to an existing process instead of spawning one.
 --- Type created to allow for a potential TCP backend
----@alias TidalRemote { unix: string, oscPort?: integer, stylePort?: integer, eventIdBase?: integer }
+---@alias TidalRemote { unix: string, eventIdBase?: integer }
 
 ---@class TidalProcConfig
 ---@field cmd string
