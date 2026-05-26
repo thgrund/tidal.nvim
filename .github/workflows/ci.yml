@@ -16,7 +16,6 @@ jobs:
             install-rg: sudo apt-get update && sudo apt-get install -y ripgrep
 
     steps:
-      - uses: actions/checkout@v6
       - uses: rhysd/action-setup-vim@v1
         with:
           neovim: true
@@ -25,7 +24,11 @@ jobs:
         run: |
           ${{ matrix.install-rg }}
           rg --version
-          git clone --depth 1 https://github.com/neovim-lua/plenary.nvim ../plenary.nvim
+      - name: Checkout plenary.nvim
+        uses: actions/checkout@6
+        with:
+          repository: nvim-lua/plenary.nvim
+          path: ../plenary.nvim
       - name: Run tests
         run: |
           nvim --version
