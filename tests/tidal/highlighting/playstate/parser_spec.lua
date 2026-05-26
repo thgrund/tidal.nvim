@@ -29,7 +29,7 @@ describe("PlayStateParser", function()
         return "lp5tew5bP"
       end
 
-      local passedIn = playStateParser.mapEvent(plain)
+      local _, passedIn = playStateParser.mapEvent(plain)
 
       local expected = {
         ["lp5tew5bP"] = {
@@ -57,7 +57,7 @@ describe("PlayStateParser", function()
         return eventId
       end
 
-      local passedIn = playStateParser.mapEvent(plain)
+      local _, passedIn = playStateParser.mapEvent(plain)
 
       local expected = {
         ["XRKUfOvTA"] = {
@@ -89,7 +89,7 @@ describe("PlayStateParser", function()
         return "lp5tew5bP"
       end
 
-      local passedIn = playStateParser.mapEvent(plain)
+      local _, passedIn = playStateParser.mapEvent(plain)
 
       local expected = {
         ["lp5tew5bP"] = {
@@ -113,7 +113,7 @@ describe("PlayStateParser", function()
         return "lp5tew5bP"
       end
 
-      local passedIn = playStateParser.mapEvent(plain)
+      local _, passedIn = playStateParser.mapEvent(plain)
 
       local expected = {
         ["lp5tew5bP"] = {
@@ -136,7 +136,7 @@ describe("PlayStateParser", function()
         return "lp5tew5bP"
       end
 
-      local passedIn = playStateParser.mapEvent(plain)
+      local _, passedIn = playStateParser.mapEvent(plain)
 
       local expected = {
         ["lp5tew5bP"] = {
@@ -160,7 +160,7 @@ describe("PlayStateParser", function()
         return "iZKbZdZMZ"
       end
 
-      local passedIn = playStateParser.mapEvent(plain)
+      local _, passedIn = playStateParser.mapEvent(plain)
 
       local expected = {
         ["iZKbZdZMZ"] = {
@@ -184,7 +184,7 @@ describe("PlayStateParser", function()
         return "Jhd8Rk8rv"
       end
 
-      local passedIn = playStateParser.mapEvent(plain)
+      local _, passedIn = playStateParser.mapEvent(plain)
 
       local expected = {
         ["Jhd8Rk8rv"] = {
@@ -205,6 +205,176 @@ describe("PlayStateParser", function()
       local plain = ""
 
       local passedIn = playStateParser.mapEvent(plain)
+
+      local expected = {}
+
+      eq(passedIn, expected)
+    end)
+  end)
+
+  describe("mapEvent event return", function()
+    it("should return event with single cycle", function()
+      local plain = "1,[(8,2)],0,1,1,1,0,1,superpiano"
+
+      playStateParser.genEventId = function()
+        return "lp5tew5bP"
+      end
+
+      local passedIn, _ = playStateParser.mapEvent(plain)
+
+      local expected = {
+        id = "1",
+        whole = {
+          start = 0,
+          stop = 1,
+        },
+        note = 0,
+        sound = "superpiano",
+      }
+
+      eq(passedIn, expected)
+    end)
+
+    it("should return event with multiple events within one cycle", function()
+      local plain = "1,[(8,2),(30,2)],0,1,1,1,0,1,superpiano"
+
+      local eventIds = { "XRKUfOvTA", "UIhicEQF1" }
+
+      playStateParser.genEventId = function()
+        local eventId = eventIds[1]
+        table.remove(eventIds, 1)
+        return eventId
+      end
+
+      local passedIn, _ = playStateParser.mapEvent(plain)
+
+      local expected = {
+        id = "1",
+        whole = {
+          start = 0,
+          stop = 1,
+        },
+        note = 0,
+        sound = "superpiano",
+      }
+
+      eq(passedIn, expected)
+    end)
+
+    it("should return event with past start and future stop", function()
+      local plain = "1,[(8,2)],0,1,3,1,0,1,superpiano"
+
+      playStateParser.genEventId = function()
+        return "lp5tew5bP"
+      end
+
+      local passedIn, _ = playStateParser.mapEvent(plain)
+
+      local expected = {
+        id = "1",
+        whole = {
+          start = 0,
+          stop = 3,
+        },
+        note = 0,
+        sound = "superpiano",
+      }
+
+      eq(passedIn, expected)
+    end)
+
+    it("should return event with fractional at the end of current", function()
+      local plain = "1,[(8,2)],7,8,15,16,0,1,superpiano"
+
+      playStateParser.genEventId = function()
+        return "lp5tew5bP"
+      end
+
+      local passedIn, _ = playStateParser.mapEvent(plain)
+
+      local expected = {
+        id = "1",
+        whole = {
+          start = 0.875,
+          stop = 0.9375,
+        },
+        note = 0,
+        sound = "superpiano",
+      }
+
+      eq(passedIn, expected)
+    end)
+
+    it("should return event with fractional at the start of current", function()
+      local plain = "1,[(8,2)],15,16,1,1,1,superpiano"
+
+      playStateParser.genEventId = function()
+        return "lp5tew5bP"
+      end
+
+      local passedIn, _ = playStateParser.mapEvent(plain)
+
+      local expected = {
+        id = "1",
+        whole = {
+          start = 0.9375,
+          stop = 1,
+        },
+        note = 1,
+        sound = "nil",
+      }
+
+      eq(passedIn, expected)
+    end)
+
+    it("should return event with past start", function()
+      local plain = "1,[(8,2)],0,1,5,2,1,superpiano"
+
+      playStateParser.genEventId = function()
+        return "iZKbZdZMZ"
+      end
+
+      local passedIn, _ = playStateParser.mapEvent(plain)
+
+      local expected = {
+        id = "1",
+        whole = {
+          start = 0,
+          stop = 2.5,
+        },
+        note = 1,
+        sound = "nil",
+      }
+
+      eq(passedIn, expected)
+    end)
+
+    it("should return event with future stop", function()
+      local plain = "1,[(8,2)],5,2,5,1,1,superpiano"
+
+      playStateParser.genEventId = function()
+        return "Jhd8Rk8rv"
+      end
+
+      local passedIn, _ = playStateParser.mapEvent(plain)
+
+      local expected = {
+        id = "1",
+        whole = {
+          start = 2.5,
+          stop = 5,
+        },
+        note = 1,
+        sound = "nil",
+      }
+
+      eq(passedIn, expected)
+    end)
+
+    it("should return empty table for empty plain", function()
+      local plain = ""
+
+      local passedIn, _ = playStateParser.mapEvent(plain)
 
       local expected = {}
 
