@@ -17,18 +17,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-
       - uses: rhysd/action-setup-vim@v1
         with:
           neovim: true
-          version: v0.12.2
-
+          version: stable 
       - name: Prepare
         run: |
           ${{ matrix.install-rg }}
           rg --version
-          git clone --depth 1 https://github.com/neovim-lua/plenary.nvim ../plenary.nvim
-
+          GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/nvim-lua/plenary.nvim ../plenary.nvim
       - name: Run tests
         run: |
           nvim --version
