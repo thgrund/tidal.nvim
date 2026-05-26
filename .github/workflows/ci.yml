@@ -26,11 +26,6 @@ jobs:
           ${{ matrix.install-rg }}
           rg --version
           GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/nvim-lua/plenary.nvim ../plenary.nvim
-      - name: Debug workspace
-        run: |
-          pwd
-          ls -la
-          ls -la Makefile
       - name: Run tests
         run: |
           nvim --version
