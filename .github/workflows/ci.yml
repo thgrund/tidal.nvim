@@ -1,6 +1,6 @@
 name: Tests
 
-on: [push, pull_request, workflow_dispatch]
+on: [push, pull_request]
 
 jobs:
   unit_tests:
@@ -10,7 +10,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        rev: [stable]
+        rev: [latest]
         include:
           - os: ubuntu-latest
             install-rg: sudo apt-get update && sudo apt-get install -y ripgrep
