@@ -28,4 +28,4 @@ jobs:
       - name: Run tests
         run: |
           nvim --version
-          make test
+          make -f ${{ github.workspace }}/Makefile test
