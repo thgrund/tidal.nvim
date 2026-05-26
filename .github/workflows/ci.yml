@@ -20,7 +20,7 @@ jobs:
       - uses: rhysd/action-setup-vim@v1
         with:
           neovim: true
-          version: v0.12.2
+          version: stable 
       - name: Prepare
         run: |
           ${{ matrix.install-rg }}
