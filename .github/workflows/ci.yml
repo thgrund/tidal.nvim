@@ -25,7 +25,7 @@ jobs:
           ${{ matrix.install-rg }}
           rg --version
       - name: Checkout plenary.nvim
-        uses: actions/checkout@6
+        uses: actions/checkout@v6
         with:
           repository: nvim-lua/plenary.nvim
           path: ../plenary.nvim
