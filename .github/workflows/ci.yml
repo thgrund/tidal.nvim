@@ -10,7 +10,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        rev: [nightly]
+        rev: [stable]
         include:
           - os: ubuntu-latest
             install-rg: sudo apt-get update && sudo apt-get install -y ripgrep
