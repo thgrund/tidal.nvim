@@ -10,7 +10,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        rev: [stable] 
+        rev: [nightly] 
         include:
           - os: ubuntu-latest
             install-rg: sudo apt-get update && sudo apt-get install -y ripgrep
@@ -18,10 +18,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: rhysd/action-setup-vim@main  # 👈 Changed from @v1 to @main
+      - uses: rhysd/action-setup-vim@v1
         with:
           neovim: true
-          version: ${{ matrix.rev }}
+          version: 0.12.2
 
       - name: Prepare
         run: |
