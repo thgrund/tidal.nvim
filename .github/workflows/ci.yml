@@ -24,11 +24,7 @@ jobs:
         run: |
           ${{ matrix.install-rg }}
           rg --version
-      - name: Checkout plenary.nvim
-        uses: actions/checkout@v6
-        with:
-          repository: nvim-lua/plenary.nvim
-          path: ../plenary.nvim
+          GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/nvim-lua/plenary.nvim ../plenary.nvim
       - name: Run tests
         run: |
           nvim --version
