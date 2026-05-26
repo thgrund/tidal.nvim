@@ -220,12 +220,16 @@ end
 --- Close the REPL
 --- @return self for method chaining
 function Repl:exit()
+  if self.buf ~= nil then
+    self.buf:delete()
+  end
+
   if self.proc and not self.proc:is_closing() then
     self.proc:kill("sigterm") -- or "sigkill"
     self.proc:close()
-    self.buf:delete()
     vim.notify(string.format("[tidal] %s stopped", self.opts.cmd))
   end
+
   return self
 end
 
