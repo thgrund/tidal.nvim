@@ -10,7 +10,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        rev: [latest]
+        rev: [stable] 
         include:
           - os: ubuntu-latest
             install-rg: sudo apt-get update && sudo apt-get install -y ripgrep
@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: rhysd/action-setup-vim@v1
+      - uses: rhysd/action-setup-vim@main  # 👈 Changed from @v1 to @main
         with:
           neovim: true
           version: ${{ matrix.rev }}
@@ -27,8 +27,7 @@ jobs:
         run: |
           ${{ matrix.install-rg }}
           rg --version
-
-          git clone --depth 1 https://github.com/nvim-lua/plenary.nvim ../plenary.nvim
+          git clone --depth 1 https://github.com/neovim-lua/plenary.nvim ../plenary.nvim
 
       - name: Run tests
         run: |
