@@ -33,11 +33,6 @@ local function setup_user_commands()
       state.ghci:showNotificationBuffer("tidal_post")
     end
   end, { desc = "Launch Tidal Notification Buffer" })
-  vim.api.nvim_create_user_command("SuperColliderNotification", function()
-    if state.sclang then
-      state.sclang:showNotificationBuffer("sc_post")
-    end
-  end, { desc = "Launch Tidal Notification Buffer" })
   vim.api.nvim_create_user_command("TidalQuit", api.exit_tidal, { desc = "Quit Tidal instance" })
 
   vim.api.nvim_create_user_command("Tidal", function()
@@ -51,19 +46,6 @@ local function setup_autocmds()
   vim.api.nvim_create_autocmd({ "BufEnter", "BufWinEnter" }, {
     group = "Tidal",
     pattern = { "*.tidal" },
-    callback = function()
-      for name, mapping in pairs(config.options.mappings or {}) do
-        if mapping then
-          local command = keymaps[name]
-          vim.keymap.set(mapping.mode, mapping.key, command.callback, { buffer = true, desc = command.desc })
-        end
-      end
-    end,
-  })
-
-  vim.api.nvim_create_autocmd({ "FileType" }, {
-    group = "Tidal",
-    pattern = { "supercollider" },
     callback = function()
       for name, mapping in pairs(config.options.mappings or {}) do
         if mapping then

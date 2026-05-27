@@ -4,8 +4,6 @@ local state = {
   launched = false,
   ---@type Ghci?
   ghci = nil,
-  ---@type Sclang?
-  sclang = nil,
 }
 
 return state
