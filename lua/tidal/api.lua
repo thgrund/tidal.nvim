@@ -11,7 +11,6 @@ local util = require("tidal.util")
 local M = {}
 
 --- Begin a Tidal session
---- Will start an sclang instance if specified in config
 ---@param args TidalBootConfig
 function M.launch_tidal(args)
   local current_win = vim.api.nvim_get_current_win()
@@ -23,10 +22,6 @@ function M.launch_tidal(args)
     boot.tidal(args.tidal, args.split)
   end
   M.start_event_highlighting(args.tidal)
-  if args.sclang.enabled then
-    -- invert the split option if tidal is opened already
-    boot.sclang(args.sclang, args.split == "v" and args.tidal.enabled and "h" or "v")
-  end
   vim.api.nvim_set_current_win(current_win)
   state.launched = true
 
@@ -48,21 +43,16 @@ function M.exit_tidal()
     return
   end
 
-  for _, proc in ipairs({ state.ghci, state.sclang }) do
-    if proc then
-      proc:exit()
-    end
+  if state.ghci then
+    state.ghci:exit()
   end
 
   state.launched = false
 end
 
----@return message.TidalRepl | message.SclangRepl
+---@return message.TidalRepl
 local function ft_to_repl()
   local ft = vim.api.nvim_get_option_value("filetype", { buf = 0 })
-  if ft == "supercollider" then
-    return message.sclang
-  end
   if ft == "haskell" or ft == "tidal" then
     return message.tidal
   end

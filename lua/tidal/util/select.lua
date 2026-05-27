@@ -136,11 +136,6 @@ local node_types = {
       "declarations",
     },
   },
-  supercollider = {
-    expression = {
-      "code_block",
-    },
-  },
 }
 
 --- Get top level TS node at current position

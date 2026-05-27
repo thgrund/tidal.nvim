@@ -8,10 +8,10 @@ See it in action [here](https://www.youtube.com/watch?v=l2IrELGzFpc)
 
 ## Features
 
-- User commands to start/stop Tidal and (optionally) SuperCollider processes in
+- User commands to start/stop Tidal processes in
   Neovim's built in terminal (see [boot](#boot))
 
-- Send commands to the Tidal and SuperCollider using built-in [keymaps](#keymaps)
+- Send commands to Tidal using built-in [keymaps](#keymaps)
 
 - Write your own keymaps and functions using lua functions exported as part of
   the tidal.nvim [api](#api)
@@ -20,7 +20,7 @@ See it in action [here](https://www.youtube.com/watch?v=l2IrELGzFpc)
 
 - Event highlighting for the mini notation patterns
 
-- Receive Tidal and SuperCollider responses from stdout and stderr in a separate
+- Receive Tidal responses from stdout and stderr in a separate
   buffer that can be closed and open again
 
 ## Installation
@@ -36,10 +36,10 @@ return {
   -- Your configuration here
   -- See configuration section for defaults
  },
- -- Recommended: Install TreeSitter parsers for Haskell and SuperCollider
+ -- Recommended: Install TreeSitter parsers for Haskell 
  dependencies = {
   "nvim-treesitter/nvim-treesitter",
-  opts = { ensure_installed = { "haskell", "supercollider" } },
+  opts = { ensure_installed = { "haskell" } },
  },
 }
 ```
@@ -81,14 +81,6 @@ return {
         fps = 30,
       },
     },
-    sclang = {
-      --- Command to launch SuperCollider
-      cmd = "sclang",
-      args = {},
-      --- SuperCollider boot file
-      file = vim.api.nvim_get_runtime_file("bootfiles/BootSuperDirt.scd", false)[1],
-      enabled = false,
-    },
     split = "v",
   },
   --- Default keymaps
@@ -123,29 +115,13 @@ return {
 - `:TidalLaunch`: starts the TidalCycles process
 - `:TidalQuit`: stops the TidalCycles process
 - `:TidalNotification`: This opens a new buffer, that will display the stdout and stderr of the TidalCycles repl session
-- `:SuperColliderNotification`: This opens a new buffer, that will display the stdout and stderr of the SuperCollider repl session
 
 By default, only a session of `ghci` running the `BootTidal.hs` script provided by this plugin is run.
 
-If `boot.sclang.enabled` is `true`, then a session of `sclang` is run. Please
-ensure that the command `sclang` correctly starts an instance of SuperCollider
-when executed in the terminal.
-
-By default on macOS, this may require something like the following shell script
-available as `sclang` in your path. Alternate commands/paths can be configured
-in `boot.sclang`
-
-```sh
-#!/bin/sh
-cd /Applications/SuperCollider.app/Contents/MacOS
-./sclang "$@"
-```
-
 ### Keymaps
 
-`tidal.nvim` provides five configurable keymaps in `.tidal` and `.scd` files,
-which are used to send chunks of TidalCycles code from the file to the Tidal
-and SuperCollider interpreters:
+`tidal.nvim` provides five configurable keymaps in `.tidal`  files,
+which are used to send chunks of TidalCycles code from the file to the Tidal interpreters:
 
 - `send_line` sends the current line
 
@@ -296,14 +272,11 @@ See the [tidal website for full details](https://tidalcycles.org/docs/getting-st
 
 - `ghc` installation with Tidal installed
 
-- SuperCollider with SuperDirt
-
 ### Neovim
 
 To use the `send_node` mapping, which is based on
 [treesitter](https://github.com/nvim-treesitter/nvim-treesitter), you must have
-the treesitter parser for `haskell` (and, optionally also `supercollider`)
-installed.
+the treesitter parser for `haskell` installed.
 
 ## Contributing
 

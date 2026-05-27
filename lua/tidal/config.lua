@@ -2,7 +2,6 @@ local M = {}
 
 ---@class TidalBootConfig
 ---@field tidal TidalProcConfig
----@field sclang TidalProcConfig
 ---@field split "v" | nil
 
 ---@class TidalProcConfig
@@ -45,14 +44,6 @@ local defaults = {
         onPlayStateChange = function() end,
         onParsedOutputChange = function() end,
       },
-    },
-    sclang = {
-      --- Command to launch SuperCollider
-      cmd = "sclang",
-      args = {},
-      --- SuperCollider boot file
-      file = vim.api.nvim_get_runtime_file("bootfiles/BootSuperDirt.scd", false)[1],
-      enabled = false,
     },
     split = "v",
   },
