@@ -1,5 +1,6 @@
 local Ghci = require("tidal.repl.ghci")
 local state = require("tidal.core.state")
+local tokenizer = require("tidal.highlighting.tokenizer")
 
 local M = {}
 
@@ -11,7 +12,7 @@ function M.tidal(opts, split)
     return
   end
 
-  state.ghci = Ghci:new({
+  local ghci = Ghci:new({
     name = "tidal-fast://ghci-output",
     cmd = opts.cmd,
     args = vim.list_extend({
@@ -21,9 +22,15 @@ function M.tidal(opts, split)
     on_exit = function(_code, _signal)
       state.ghci = nil
     end,
-  }):start({
-    split = split or "v",
   })
+
+  if opts.remote then
+    tokenizer.eventIdBase = opts.remote.eventIdBase or tokenizer.eventIdBase
+    tokenizer.lastEventId = tokenizer.eventIdBase
+    state.ghci = ghci:connect_remote(opts.remote)
+  else
+    state.ghci = ghci:start({ split = split or "v" })
+  end
 end
 
 return M
