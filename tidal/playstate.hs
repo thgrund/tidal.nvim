@@ -91,5 +91,8 @@ streamActivePt s arc = do
 clock' = pR "clock"
 clock pt = p "clock" $ clock' pt
 
+instance Stringy (Sound.Tidal.ID.ID) where
+  deltaContext _ _ = id
+
 :}
 
