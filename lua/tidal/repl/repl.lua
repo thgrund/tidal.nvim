@@ -175,7 +175,7 @@ function Repl:send(text, start)
 
       if line:match("^hush") ~= nil then
         marker.deleteAllMarkers()
-        tokenizer.lastEventId = 0
+        tokenizer.lastEventId = tokenizer.eventIdBase
 
         vim.api.nvim_exec_autocmds("User", { pattern = "TidalHush", modeline = false })
       end
@@ -217,6 +217,31 @@ function Repl:send_multiline(lines, start)
   return self:send_line(table.concat(lines, "\n"), start)
 end
 
+--- Connect to an existing remote ghci process
+--- @param remote TidalRemote
+--- @generic T
+--- @return T for method chaining
+function Repl:connect_remote(remote)
+  if not remote.unix then
+    vim.notify("[tidal] remote requires .unix", vim.log.levels.ERROR)
+    return self
+  end
+  self.stdin = uv.new_pipe(false)
+  self.stdin:connect(remote.unix, function(err)
+    if err then
+      vim.schedule(function()
+        vim.notify(("[tidal] failed to connect to %s: %s"):format(remote.unix, err), vim.log.levels.ERROR)
+      end)
+      return
+    end
+    self:attach(self.stdin, "io")
+    vim.schedule(function()
+      vim.notify(("[tidal] connected to %s"):format(remote.unix), vim.log.levels.INFO)
+    end)
+  end)
+  return self
+end
+
 --- Close the REPL
 --- @return self for method chaining
 function Repl:exit()
@@ -228,6 +253,11 @@ function Repl:exit()
     self.proc:kill("sigterm") -- or "sigkill"
     self.proc:close()
     vim.notify(string.format("[tidal] %s stopped", self.opts.cmd))
+  elseif self.stdin and not self.stdin:is_closing() then
+    -- in spawn mode self.stdin gets closed by start()'s on_exit
+    -- handler; in remote mode we have to handle it ourselves
+    self.stdin:close()
+    vim.notify("[tidal] disconnected from remote")
   end
 
   return self

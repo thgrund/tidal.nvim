@@ -5,11 +5,16 @@ local M = {}
 ---@field sclang TidalProcConfig
 ---@field split "v" | nil
 
+--- Connect to an existing process instead of spawning one.
+--- Type created to allow for a potential TCP backend
+---@alias TidalRemote { unix: string, eventIdBase?: integer }
+
 ---@class TidalProcConfig
 ---@field cmd string
 ---@field file string
 ---@field args table<string>
 ---@field enabled boolean
+---@field remote? TidalRemote
 
 ---@class TidalConfig
 local defaults = {
@@ -24,6 +29,7 @@ local defaults = {
       --- Tidal boot file path
       file = vim.api.nvim_get_runtime_file("bootfiles/BootTidal.hs", false)[1],
       enabled = true,
+      remote = nil,
       highlight = {
         type = "stdio",
         styles = {

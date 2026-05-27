@@ -106,6 +106,7 @@ describe("Repl", function()
     -- Mock tokenizer & marker ------------------------------------------------
     --------------------------------------------------------------------------
     package.loaded["tidal.highlighting.tokenizer"] = {
+      eventIdBase = 0,
       lastEventId = 42,
       addMetadata = function(line, row)
         return string.format("%s@%d", line, row)
