@@ -55,6 +55,9 @@ describe("OSC", function()
         return {
           started = false,
           closed = false,
+          is_closing = function(self)
+            return self.closed
+          end,
           start = function(self, initial, repeat_interval, callback)
             self.started = true
             self.initial = initial
